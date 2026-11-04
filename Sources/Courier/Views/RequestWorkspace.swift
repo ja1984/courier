@@ -43,7 +43,8 @@ struct RequestWorkspace: View {
                         KeyValueEditor(
                             title: "Headers",
                             items: $tab.spec.headers,
-                            note: "Content-Type is added automatically for bodies"
+                            note: "Content-Type is added automatically for bodies",
+                            masksSecrets: true
                         )
                     case .body:
                         BodyEditor(spec: $tab.spec)

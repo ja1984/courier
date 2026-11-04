@@ -18,6 +18,10 @@ struct CourierApp: App {
         .defaultSize(width: 1280, height: 820)
         .windowToolbarStyle(.unified(showsTitle: false))
         .commands { CourierCommands(store: store) }
+
+        Settings {
+            SettingsView()
+        }
     }
 }
 
@@ -33,6 +37,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 struct CourierCommands: Commands {
     @Bindable var store: AppStore
+    private static let recentLimit = 15
+
+    /// Most recent first, one item per method + URL.
+    private static func recentEntries(_ history: [HistoryEntry]) -> [HistoryEntry] {
+        var seen = Set<String>()
+        var result: [HistoryEntry] = []
+        for entry in history where result.count < recentLimit {
+            if seen.insert("\(entry.spec.method.rawValue) \(entry.spec.url)").inserted { result.append(entry) }
+        }
+        return result
+    }
+
+    /// "GET  api.example.com/users/42", shortened in the middle so the menu stays narrow.
+    /// The query string is left out: it often carries tokens, and menus can't hide them.
+    private static func menuTitle(for entry: HistoryEntry) -> String {
+        var target = String(entry.spec.url.prefix { $0 != "?" && $0 != "#" })
+        for scheme in ["https://", "http://"] where target.hasPrefix(scheme) {
+            target.removeFirst(scheme.count)
+        }
+        if target.count > 70 { target = "\(target.prefix(45))…\(target.suffix(24))" }
+        return "\(entry.spec.method.rawValue)  \(target)"
+    }
 
     var body: some Commands {
         CommandGroup(after: .sidebar) {
@@ -43,6 +69,18 @@ struct CourierCommands: Commands {
             }
         }
         CommandMenu("History") {
+            Button("Reopen Closed Tab") { store.reopenClosedTab() }
+                .keyboardShortcut("t", modifiers: [.command, .shift])
+                .disabled(store.closedTabs.isEmpty)
+            Section("Recent Requests") {
+                if store.history.isEmpty {
+                    Text("No Requests Yet")
+                }
+                ForEach(Self.recentEntries(store.history)) { entry in
+                    Button(Self.menuTitle(for: entry)) { store.open(entry.spec) }
+                }
+            }
+            Divider()
             Button("Clear History…") { store.isConfirmingClearHistory = true }
                 .disabled(store.history.isEmpty)
         }

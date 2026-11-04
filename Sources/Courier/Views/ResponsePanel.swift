@@ -390,6 +390,36 @@ private struct FormatBadge: View {
     }
 }
 
+private struct HeaderRow: View {
+    let header: KeyValue
+    let isStriped: Bool
+    @State private var isHoveringValue = false
+    @AppStorage(SettingsKey.maskSensitiveHeaders) private var maskSetting = true
+
+    private var isMasked: Bool {
+        maskSetting && !isHoveringValue && SensitiveHeaders.isSensitive(header.key)
+    }
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 16) {
+            Text(header.key)
+                .fontWeight(.semibold)
+                .frame(width: 240, alignment: .leading)
+            Text(isMasked ? SensitiveHeaders.mask : header.value)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onHover { isHoveringValue = $0 }
+                .help(isMasked ? "Hidden because “\(header.key)” looks like a secret. Hover to show." : "")
+        }
+        .font(.system(size: 12, design: .monospaced))
+        .textSelection(.enabled)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 6)
+        .background(isStriped ? Color.primary.opacity(0.03) : .clear)
+    }
+}
+
 private struct HeadersList: View {
     let headers: [KeyValue]
 
@@ -397,19 +427,7 @@ private struct HeadersList: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(headers.enumerated()), id: \.element.id) { index, header in
-                    HStack(alignment: .firstTextBaseline, spacing: 16) {
-                        Text(header.key)
-                            .fontWeight(.semibold)
-                            .frame(width: 240, alignment: .leading)
-                        Text(header.value)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                    .font(.system(size: 12, design: .monospaced))
-                    .textSelection(.enabled)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 6)
-                    .background(index.isMultiple(of: 2) ? Color.primary.opacity(0.03) : .clear)
+                    HeaderRow(header: header, isStriped: index.isMultiple(of: 2))
                 }
             }
         }

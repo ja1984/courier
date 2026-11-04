@@ -20,8 +20,9 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
 ## Features
 
 **Requests**
-- **Tabs** for working on several requests at once. They're restored when you reopen the app.
+- **Tabs** for working on several requests at once. They're restored when you reopen the app, and <kbd>⇧</kbd><kbd>⌘</kbd><kbd>T</kbd> reopens tabs you closed.
 - **Query params stay in sync with the URL.** Edit either one, and switch individual params and headers on or off.
+- **Secrets stay hidden.** Values of headers like `Authorization`, `Cookie`, `X-API-Key` or anything named with "token", "secret" or "key" show as dots until you hover over the value or edit it. You can turn this off in Settings (<kbd>⌘</kbd><kbd>,</kbd>).
 - **Body** as JSON (highlighted, with Beautify), plain text, or form fields. Content-Type is set for you unless you set it yourself.
 
 **cURL**
@@ -40,6 +41,7 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
 
 **History**
 - Every request is saved and can be grouped **by date or by host**, searched, reopened, copied as cURL or deleted.
+- The **History menu** in the menu bar lists your recent requests. Query strings are left out of the menu, since they often carry tokens.
 - Tabs and history are **encrypted on disk**, with the key kept in your Keychain.
 
 ## Requirements
@@ -68,6 +70,8 @@ The build script signs the app with your Apple Development certificate if you ha
 | Send request | <kbd>⌘</kbd><kbd>↩</kbd> |
 | Cancel request | <kbd>⌘</kbd><kbd>.</kbd> |
 | New tab / close tab | <kbd>⌘</kbd><kbd>T</kbd> / <kbd>⌘</kbd><kbd>W</kbd> (or middle-click a tab) |
+| Reopen closed tab | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>T</kbd> |
+| Settings | <kbd>⌘</kbd><kbd>,</kbd> |
 | Next / previous tab | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>]</kbd> / <kbd>⇧</kbd><kbd>⌘</kbd><kbd>[</kbd> |
 | Import cURL from clipboard | <kbd>⌘</kbd><kbd>V</kbd> anywhere, or <kbd>⇧</kbd><kbd>⌘</kbd><kbd>V</kbd> |
 | Copy as cURL | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd> |
@@ -81,6 +85,8 @@ The build script signs the app with your Apple Development certificate if you ha
   - If the key can't be read, Courier tells you and doesn't save that session; it never falls back to plain text.
   - A file that can't be opened is renamed (`*.unreadable-<timestamp>`) instead of being overwritten.
   - The data files alone are unreadable. The key isn't synced via iCloud, but like your other saved passwords it is included when you back up or migrate your whole user account, so a restored account can still open them.
+- **Hidden header values are only hidden on screen.** They're still sent, saved (encrypted) in history, and included in Copy as cURL.
+- **Closed tabs** can be reopened until you quit. They aren't saved to disk.
 - **No cookies or cache between requests.** Each request uses a fresh connection, which is also what makes the full DNS/TCP/TLS timing available every time.
 - **HTML previews** run without JavaScript and with no persistent storage. Links open in your browser.
 - **Other data folders:** set `COURIER_DATA_DIR=/some/folder` to run against another folder, handy for demos (the screenshot above was made that way).

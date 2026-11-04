@@ -7,6 +7,8 @@ struct KeyValueEditor: View {
     let title: String
     @Binding var items: [KeyValue]
     var note: String?
+    /// Hides values of secret-looking keys until hovered or edited (if enabled in Settings).
+    var masksSecrets = false
 
     /// Id of the trailing placeholder row. When it's edited, the new item takes this id,
     /// so SwiftUI keeps the same row (and keyboard focus) while a fresh placeholder appears.
@@ -53,6 +55,7 @@ struct KeyValueEditor: View {
                         KeyValueRow(
                             item: binding(for: row.id),
                             isPlaceholder: row.id == placeholderID,
+                            masksSecrets: masksSecrets,
                             onDelete: { items.removeAll { $0.id == row.id } }
                         )
                     }
@@ -99,8 +102,18 @@ struct KeyValueEditor: View {
 private struct KeyValueRow: View {
     @Binding var item: KeyValue
     let isPlaceholder: Bool
+    let masksSecrets: Bool
     let onDelete: () -> Void
     @State private var isHovering = false
+    /// Only hovering the value itself reveals it, not the rest of the row.
+    @State private var isHoveringValue = false
+    @FocusState private var valueIsFocused: Bool
+    @AppStorage(SettingsKey.maskSensitiveHeaders) private var maskSetting = true
+
+    private var isMasked: Bool {
+        masksSecrets && maskSetting && !isHoveringValue && !valueIsFocused
+            && !item.value.isEmpty && SensitiveHeaders.isSensitive(item.key)
+    }
 
     var body: some View {
         KeyValueEditor.columns(
@@ -119,6 +132,21 @@ private struct KeyValueRow: View {
                 .opacity(item.isEnabled || isPlaceholder ? 1 : 0.45),
             value: TextField("Value", text: $item.value)
                 .textFieldStyle(.plain)
+                .focused($valueIsFocused)
+                // The field stays in place (keeping layout and focus); the mask just covers it.
+                .opacity(isMasked ? 0 : 1)
+                .overlay(alignment: .leading) {
+                    if isMasked {
+                        Text(SensitiveHeaders.mask)
+                            .foregroundStyle(.secondary)
+                            .allowsHitTesting(false)
+                            .accessibilityLabel("Hidden value")
+                    }
+                }
+                .help(isMasked ? "Hidden because “\(item.key)” looks like a secret. Hover to show." : "")
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onHover { isHoveringValue = $0 }
                 .opacity(item.isEnabled || isPlaceholder ? 1 : 0.45),
             delete: Group {
                 if isPlaceholder {

@@ -138,9 +138,23 @@ final class AppStore {
         saveTabs()
     }
 
+    /// Recently closed tabs, newest last, for Reopen Closed Tab (⇧⌘T). Kept for this session only.
+    private(set) var closedTabs: [ClosedTab] = []
+    static let closedTabsLimit = 25
+
+    struct ClosedTab {
+        let spec: RequestSpec
+        let index: Int
+    }
+
     func closeTab(_ id: UUID) {
         guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
-        tabs[index].cancel()
+        let closing = tabs[index]
+        closing.cancel()
+        if !closing.isPristine {
+            closedTabs.append(ClosedTab(spec: closing.spec, index: index))
+            if closedTabs.count > Self.closedTabsLimit { closedTabs.removeFirst() }
+        }
         tabs.remove(at: index)
         if tabs.isEmpty {
             newTab()
@@ -149,6 +163,20 @@ final class AppStore {
         if selectedTabID == id {
             selectedTabID = tabs[min(index, tabs.count - 1)].id
         }
+        saveTabs()
+    }
+
+    /// Reopens the most recently closed tab where it was. Replaces the tab
+    /// if it's the only one and still blank (e.g. after closing the last tab).
+    func reopenClosedTab() {
+        guard let closed = closedTabs.popLast() else { return }
+        let tab = RequestTab(spec: closed.spec)
+        if tabs.count == 1, tabs[0].isPristine {
+            tabs = [tab]
+        } else {
+            tabs.insert(tab, at: min(closed.index, tabs.count))
+        }
+        selectedTabID = tab.id
         saveTabs()
     }
 
