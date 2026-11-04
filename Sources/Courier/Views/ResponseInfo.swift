@@ -69,6 +69,9 @@ struct ResponseInfoBar: View {
             if let metrics = response.metrics {
                 NetworkItem(metrics: metrics, isSecure: response.finalURL?.scheme == "https")
             }
+            if let metrics = response.metrics, !metrics.redirects.isEmpty {
+                RedirectsItem(redirects: metrics.redirects, response: response)
+            }
             StatusItem(code: response.statusCode, text: response.statusText)
             TimeItem(response: response)
             SizeItem(response: response)
@@ -92,7 +95,7 @@ private struct NetworkItem: View {
                 LabeledLine(label: "Local Address", value: metrics.localAddress ?? "—")
                 LabeledLine(label: "Remote Address", value: metrics.remoteAddress ?? "—")
                 if metrics.redirectCount > 0 {
-                    LabeledLine(label: "Redirects", value: "\(metrics.redirectCount) (details are for the final hop)")
+                    LabeledLine(label: "Redirects", value: "\(metrics.redirectCount) (details are for the final response)")
                 }
                 if metrics.tlsVersion != nil {
                     Divider()
@@ -111,6 +114,107 @@ private struct NetworkItem: View {
             }
             .frame(width: 360)
         }
+    }
+}
+
+private struct RedirectsItem: View {
+    let redirects: [RedirectHop]
+    let response: HTTPResponse
+
+    private var summary: String {
+        redirects.count == 1 ? "1 redirect" : "\(redirects.count) redirects"
+    }
+
+    var body: some View {
+        InfoItem(help: "Show the redirects this request followed") {
+            HStack(spacing: 4) {
+                Image(systemName: "arrow.uturn.right")
+                    .font(.system(size: 10, weight: .semibold))
+                Text(summary)
+            }
+            .foregroundStyle(.secondary)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(summary)
+        } details: {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("Redirects").font(.headline)
+                Text("Followed automatically. The status, headers, body and network details shown are for the final response.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+                Divider()
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array(redirects.enumerated()), id: \.offset) { _, hop in
+                        RedirectRow(
+                            statusCode: hop.statusCode,
+                            method: hop.method,
+                            url: hop.url.absoluteString,
+                            location: hop.location,
+                            httpVersion: hop.httpVersion,
+                            duration: hop.duration
+                        )
+                        Divider()
+                    }
+                    RedirectRow(
+                        statusCode: response.statusCode,
+                        method: nil,
+                        url: response.finalURL?.absoluteString ?? "—",
+                        location: nil,
+                        httpVersion: response.metrics?.httpVersion,
+                        duration: nil,
+                        isFinal: true
+                    )
+                }
+            }
+            .frame(width: 520, alignment: .leading)
+        }
+    }
+}
+
+private struct RedirectRow: View {
+    let statusCode: Int
+    let method: String?
+    let url: String
+    let location: String?
+    let httpVersion: String?
+    let duration: Duration?
+    var isFinal = false
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            Text("\(statusCode)")
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .foregroundStyle(StatusStyle.color(for: statusCode))
+                .frame(width: 34, alignment: .leading)
+                .help(HTTPStatus.reasonPhrase(for: statusCode))
+            VStack(alignment: .leading, spacing: 2) {
+                Text(url)
+                    .font(.system(size: 12, design: .monospaced))
+                    .lineLimit(2)
+                    .truncationMode(.middle)
+                    .textSelection(.enabled)
+                Group {
+                    if isFinal {
+                        Text("\(HTTPStatus.reasonPhrase(for: statusCode)) · final response")
+                    } else if let location {
+                        Text("\(HTTPStatus.reasonPhrase(for: statusCode)) → \(location)")
+                    } else {
+                        Text(HTTPStatus.reasonPhrase(for: statusCode))
+                    }
+                }
+                .font(.system(size: 11))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .truncationMode(.middle)
+            }
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 2) {
+                if let duration { Text(formatMs(duration)) }
+                if let httpVersion { Text("HTTP/\(httpVersion)").foregroundStyle(.secondary) }
+            }
+            .font(.system(size: 11, design: .monospaced))
+        }
+        .padding(.vertical, 7)
     }
 }
 

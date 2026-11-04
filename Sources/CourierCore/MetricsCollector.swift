@@ -59,12 +59,29 @@ final class MetricsCollector: NSObject, URLSessionTaskDelegate, Sendable {
             cipherSuite: last.negotiatedTLSCipherSuite.map { ResponseMetrics.cipherSuiteName($0.rawValue) },
             certificate: last.negotiatedTLSProtocolVersion == nil ? nil : certificate,
             isReusedConnection: last.isReusedConnection,
-            redirectCount: transactions.count - 1,
+            redirects: RedirectHop.chain(from: transactions.compactMap(Self.hop)),
             requestHeaderBytes: last.countOfRequestHeaderBytesSent,
             requestBodyBytes: last.countOfRequestBodyBytesSent,
             responseHeaderBytes: last.countOfResponseHeaderBytesReceived,
             responseBodyBytes: last.countOfResponseBodyBytesReceived,
             responseBodyDecodedBytes: last.countOfResponseBodyBytesAfterDecoding
+        )
+    }
+
+    /// A transaction as a hop candidate; `RedirectHop.chain` decides which ones were redirects.
+    private static func hop(_ t: URLSessionTaskTransactionMetrics) -> RedirectHop? {
+        guard let url = t.request.url, let response = t.response as? HTTPURLResponse else { return nil }
+        var duration: Duration?
+        if let start = t.fetchStartDate, let end = t.responseEndDate, end >= start {
+            duration = .seconds(end.timeIntervalSince(start))
+        }
+        return RedirectHop(
+            method: t.request.httpMethod ?? "GET",
+            url: url,
+            statusCode: response.statusCode,
+            location: response.value(forHTTPHeaderField: "Location"),
+            httpVersion: ResponseMetrics.httpVersion(fromProtocolName: t.networkProtocolName),
+            duration: duration
         )
     }
 

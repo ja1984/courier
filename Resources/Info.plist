@@ -26,12 +26,11 @@
     <true/>
     <key>NSPrincipalClass</key>
     <string>NSApplication</string>
-    <!-- An API client must be able to hit plain http:// endpoints (localhost, internal services). -->
+    <!-- An API client must be able to hit plain http:// endpoints. Don't add NSAllowsLocalNetworking
+         or other narrower ATS keys: when any is present, NSAllowsArbitraryLoads is ignored. -->
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsArbitraryLoads</key>
-        <true/>
-        <key>NSAllowsLocalNetworking</key>
         <true/>
     </dict>
 </dict>

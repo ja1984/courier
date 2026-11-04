@@ -37,6 +37,7 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
   - HTML is rendered, with JavaScript off.
   - XML and HTML are pretty-printed without rewriting their content.
 - **Search** with <kbd>⌘</kbd><kbd>F</kbd> works across every view: highlighted matches and next/previous in text, matches revealed in the JSON tree, and filtering for headers.
+- **Redirects are shown, not hidden.** Courier follows them, and a "2 redirects" badge next to the status lists each hop: status, URL, where it pointed, protocol and time.
 - **Details on click:** what the status code means, a timing waterfall (DNS, TCP, TLS, time to first byte, download), request and response sizes (compressed and uncompressed), HTTP version, IP addresses, TLS version and cipher, and the server certificate.
 
 **Appearance**
@@ -114,6 +115,8 @@ Push a version tag and GitHub Actions tests, builds a universal Courier.app, sig
 git tag v1.1.0 && git push origin v1.1.0
 ```
 
+The tag sets the version shown in About Courier, and the release notes list the commit titles since the previous tag (edit them on GitHub afterwards if needed).
+
 Running the **Release** workflow by hand from the Actions tab builds the zip as a workflow artifact without publishing a release. Releases are signed with a Developer ID and notarized, using the five repository secrets listed at the top of [`release.yml`](.github/workflows/release.yml). Tagged builds fail without them rather than publish an unsigned app.
 
 ## Project layout
@@ -127,7 +130,7 @@ Sources/
 Tests/
   CourierCoreTests/   Swift Testing suite (`swift test`)
 Resources/       Info.plist and the icon master (AppIcon.png)
-scripts/         build-app.sh (bundle + install), make-dmg.sh, notarize.sh, make-icon.sh
+scripts/         build-app.sh (bundle + install), make-dmg.sh, notarize.sh, release-notes.sh, make-icon.sh
 .github/         Release workflow
 ```
 
@@ -136,7 +139,7 @@ scripts/         build-app.sh (bundle + install), make-dmg.sh, notarize.sh, make
 - `-F` multipart fields are imported as URL-encoded form fields, so file uploads aren't supported yet.
 - No environments/variables or saved collections yet.
 - Over HTTP/2 and HTTP/3, header sizes are the compressed on-the-wire bytes, so they're approximate.
-- After redirects, the network and timing details describe the final hop.
+- Redirects are always followed. Each hop is listed, but the network and timing details describe the final response.
 - The JSON tree is limited to 128 levels of nesting. Deeper documents open in Pretty view instead.
 
 ## Built with AI, free of AI

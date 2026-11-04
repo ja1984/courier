@@ -61,6 +61,32 @@ public struct TransactionTimestamps: Sendable {
     }
 }
 
+/// One redirect the request went through before the final response.
+public struct RedirectHop: Equatable, Sendable {
+    public var method: String
+    public var url: URL
+    public var statusCode: Int
+    /// Where the server pointed (the Location header, possibly relative).
+    public var location: String?
+    public var httpVersion: String?
+    public var duration: Duration?
+
+    public init(method: String, url: URL, statusCode: Int, location: String? = nil, httpVersion: String? = nil, duration: Duration? = nil) {
+        self.method = method
+        self.url = url
+        self.statusCode = statusCode
+        self.location = location
+        self.httpVersion = httpVersion
+        self.duration = duration
+    }
+
+    /// The redirects among a task's network transactions, in order. The last transaction is the
+    /// final response, and anything that isn't a 3xx (e.g. a 401 retried with credentials) isn't a redirect.
+    public static func chain(from transactions: [RedirectHop]) -> [RedirectHop] {
+        transactions.dropLast().filter { (300..<400).contains($0.statusCode) }
+    }
+}
+
 public struct ResponseMetrics: Sendable {
     public var phases: [TimingPhase]
     public var httpVersion: String?
@@ -70,7 +96,9 @@ public struct ResponseMetrics: Sendable {
     public var cipherSuite: String?
     public var certificate: CertificateSummary?
     public var isReusedConnection: Bool
-    public var redirectCount: Int
+    /// Redirects followed before the final response, in order.
+    public var redirects: [RedirectHop]
+    public var redirectCount: Int { redirects.count }
 
     public var requestHeaderBytes: Int64
     public var requestBodyBytes: Int64
@@ -83,7 +111,7 @@ public struct ResponseMetrics: Sendable {
     public init(
         phases: [TimingPhase] = [], httpVersion: String? = nil, localAddress: String? = nil,
         remoteAddress: String? = nil, tlsVersion: String? = nil, cipherSuite: String? = nil,
-        certificate: CertificateSummary? = nil, isReusedConnection: Bool = false, redirectCount: Int = 0,
+        certificate: CertificateSummary? = nil, isReusedConnection: Bool = false, redirects: [RedirectHop] = [],
         requestHeaderBytes: Int64 = 0, requestBodyBytes: Int64 = 0, responseHeaderBytes: Int64 = 0,
         responseBodyBytes: Int64 = 0, responseBodyDecodedBytes: Int64 = 0
     ) {
@@ -95,7 +123,7 @@ public struct ResponseMetrics: Sendable {
         self.cipherSuite = cipherSuite
         self.certificate = certificate
         self.isReusedConnection = isReusedConnection
-        self.redirectCount = redirectCount
+        self.redirects = redirects
         self.requestHeaderBytes = requestHeaderBytes
         self.requestBodyBytes = requestBodyBytes
         self.responseHeaderBytes = responseHeaderBytes
