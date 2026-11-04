@@ -28,7 +28,7 @@ jobs:
     env:
       HAS_SIGNING: ${{ secrets.DEVELOPER_ID_P12 != '' && secrets.NOTARY_API_KEY != '' }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0 # full history and tags, for the release notes
 
@@ -56,6 +56,11 @@ jobs:
         id: version
         run: |
           if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            # Only plain versions (v1.2.3, v1.2.3-beta.1): the tag ends up in file names and commands.
+            if [[ ! "$GITHUB_REF_NAME" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
+              echo "::error::Tag must look like v1.2.3 or v1.2.3-beta.1"
+              exit 1
+            fi
             VERSION="${GITHUB_REF_NAME#v}"
           else
             VERSION="0.0.0-dev.${GITHUB_RUN_NUMBER}"
@@ -110,8 +115,10 @@ jobs:
 
       - name: Package
         id: package
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
-          NAME="Courier-${{ steps.version.outputs.version }}"
+          NAME="Courier-$VERSION"
           ditto -c -k --keepParent build/Courier.app "$NAME.zip"
           ./scripts/make-dmg.sh "$NAME.dmg"
           echo "name=$NAME" >> "$GITHUB_OUTPUT"
@@ -121,24 +128,28 @@ jobs:
         env:
           NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
           NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+          NAME: ${{ steps.package.outputs.name }}
         run: |
-          DMG="${{ steps.package.outputs.name }}.dmg"
+          DMG="$NAME.dmg"
           ./scripts/notarize.sh "$DMG"
           xcrun stapler staple "$DMG"
           spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
 
       - name: Release notes
         run: |
-          ./scripts/release-notes.sh "${{ github.ref_type == 'tag' && github.ref_name || 'HEAD' }}" | tee release-notes.md
+          REF=HEAD
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then REF="$GITHUB_REF_NAME"; fi
+          ./scripts/release-notes.sh "$REF" | tee release-notes.md
 
       - name: Checksums
+        env:
+          NAME: ${{ steps.package.outputs.name }}
         run: |
-          NAME="${{ steps.package.outputs.name }}"
           shasum -a 256 "$NAME.dmg" "$NAME.zip" | tee SHA256SUMS.txt
 
       - name: Upload artifact
         if: github.ref_type != 'tag'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ steps.package.outputs.name }}
           path: |
@@ -150,10 +161,12 @@ jobs:
         if: github.ref_type == 'tag'
         env:
           GH_TOKEN: ${{ github.token }}
+          NAME: ${{ steps.package.outputs.name }}
+          VERSION: ${{ steps.version.outputs.version }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            "${{ steps.package.outputs.name }}.dmg" "${{ steps.package.outputs.name }}.zip" SHA256SUMS.txt \
-            --title "Courier ${{ steps.version.outputs.version }}" \
+            "$NAME.dmg" "$NAME.zip" SHA256SUMS.txt \
+            --title "Courier $VERSION" \
             --notes-file release-notes.md
 
       - name: Clean up signing material
