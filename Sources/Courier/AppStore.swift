@@ -112,6 +112,17 @@ final class AppStore {
         tabs = snapshot?.tabs.map { RequestTab(id: $0.id, spec: $0.spec) } ?? []
         if tabs.isEmpty { tabs = [RequestTab()] }
         selectedTabID = tabs.contains { $0.id == snapshot?.selectedID } ? snapshot?.selectedID : tabs.first?.id
+
+        if let reason = persistence.unavailableReason {
+            alert = AppAlert(
+                title: "Tabs and history won't be saved",
+                message: "\(reason) Nothing is written to disk this session, so nothing is stored unencrypted."
+            )
+        } else if persistence.hasLegacyPlaintext {
+            // Re-save files from older versions encrypted; this also deletes the plaintext copies.
+            persistence.saveHistory(history)
+            saveTabs()
+        }
     }
 
     var selectedTab: RequestTab? {

@@ -15,7 +15,11 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/Courier" "$APP/Contents/MacOS/Courier"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
-codesign --force --sign - "$APP" >/dev/null
+# Sign with a stable identity when one exists, so the Keychain keeps recognising the app
+# across rebuilds (ad-hoc signatures change every build). Override with CODESIGN_IDENTITY.
+IDENTITY="${CODESIGN_IDENTITY:-$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development|Developer ID Application/ {print $2; exit}')}"
+codesign --force --sign "${IDENTITY:--}" "$APP" >/dev/null
+echo "Signed with: ${IDENTITY:-ad-hoc}"
 
 echo "Built $APP"
 

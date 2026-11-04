@@ -40,6 +40,7 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
 
 **History**
 - Every request is saved and can be grouped **by date or by host**, searched, reopened, copied as cURL or deleted.
+- Tabs and history are **encrypted on disk**, with the key kept in your Keychain.
 
 ## Requirements
 
@@ -56,7 +57,9 @@ swift test                      # run the test suite
 ./scripts/build-app.sh --install  # …and copies it to /Applications
 ```
 
-`swift run Courier` also works for quick iterations. The `.app` bundle is ad-hoc signed for local use.
+`swift run Courier` also works for quick iterations.
+
+The build script signs the app with your Apple Development certificate if you have one, or with `CODESIGN_IDENTITY` if set. Without one it falls back to ad-hoc signing, and macOS will then ask for Keychain access after each rebuild, because ad-hoc signatures change every build.
 
 ## Keyboard shortcuts
 
@@ -72,7 +75,11 @@ swift test                      # run the test suite
 
 ## Data & privacy
 
-- **Tabs and history** (the last 500 requests) are saved as JSON in `~/Library/Application Support/Courier/`. They're stored **in plain text, including headers**, so cookies and tokens from pasted cURL commands end up on disk. Delete history entries you don't want kept.
+- **Tabs and history** (the last 500 requests, including headers) are stored **encrypted** in `~/Library/Application Support/Courier/`:
+  - The encryption is AES-256-GCM. The key is generated once and kept in your login Keychain, tied to this Mac.
+  - Files from older versions are encrypted and their plain-text copies deleted on first launch.
+  - If the key can't be read, Courier tells you and doesn't save that session; it never falls back to plain text.
+  - Because the key never leaves this Mac, encrypted files copied to another Mac or restored from a backup there can't be opened.
 - **No cookies or cache between requests.** Each request uses a fresh connection, which is also what makes the full DNS/TCP/TLS timing available every time.
 - **HTML previews** run without JavaScript and with no persistent storage. Links open in your browser.
 - **Other data folders:** set `COURIER_DATA_DIR=/some/folder` to run against another folder, handy for demos (the screenshot above was made that way).
@@ -81,9 +88,10 @@ swift test                      # run the test suite
 
 ```
 Sources/
-  CourierCore/   Parsing, formatting and networking: cURL parser/exporter, JSON tree,
-                 XML/HTML formatter, HTTP client with metrics. No UI; fully unit tested.
-  Courier/       The SwiftUI app: state, persistence and views.
+  CourierCore/   Parsing, formatting, networking and storage: cURL parser/exporter, JSON tree,
+                 XML/HTML formatter, HTTP client with metrics, encrypted file store.
+                 No UI; fully unit tested.
+  Courier/       The SwiftUI app: state, Keychain-backed persistence and views.
 Tests/
   CourierCoreTests/   Swift Testing suite (`swift test`)
 Resources/       Info.plist and the icon master (AppIcon.png)
