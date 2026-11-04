@@ -50,7 +50,7 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
 ## Requirements
 
 - macOS 26 or later
-- Xcode 26 or later (Swift 6.2 toolchain), only needed to build it
+- Xcode 26 or later (Swift 6.2 toolchain), only needed to build it. The Command Line Tools alone aren't enough: SwiftUI's macros ship only with Xcode.
 
 ## Build & install
 
@@ -63,6 +63,14 @@ swift test                      # run the test suite
 ```
 
 `swift run Courier` also works for quick iterations.
+
+If the build fails with `plugin for module 'SwiftUIMacros' not found`, Swift is using the Command Line Tools instead of Xcode. Point it at Xcode:
+
+```bash
+sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+# or, for a single command:
+DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer swift test
+```
 
 The build script signs the app with your Apple Development certificate if you have one, or with `CODESIGN_IDENTITY` if set. Without one it falls back to ad-hoc signing, and macOS will then ask for Keychain access after each rebuild, because ad-hoc signatures change every build.
 
