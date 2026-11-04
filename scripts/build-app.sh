@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 # Builds a release Courier.app into ./build. Pass --install to copy it to /Applications.
+# Env: CODESIGN_IDENTITY, UNIVERSAL=1, COURIER_VERSION / COURIER_BUILD (see below).
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -21,8 +22,11 @@ fi
 # Regenerate the icon when the master PNG is newer than the .icns.
 if [ ! -f Resources/AppIcon.icns ] || [ Resources/AppIcon.png -nt Resources/AppIcon.icns ]; then scripts/make-icon.sh; fi
 
-swift build -c release --product Courier
-BIN_DIR="$(swift build -c release --show-bin-path)"
+# UNIVERSAL=1 builds for both Apple silicon and Intel (used for releases).
+ARCH_FLAGS=()
+if [[ "${UNIVERSAL:-}" == "1" ]]; then ARCH_FLAGS=(--arch arm64 --arch x86_64); fi
+swift build -c release --product Courier ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"}
+BIN_DIR="$(swift build -c release ${ARCH_FLAGS[@]+"${ARCH_FLAGS[@]}"} --show-bin-path)"
 
 APP="build/Courier.app"
 rm -rf "$APP"
@@ -30,10 +34,18 @@ mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
 cp "$BIN_DIR/Courier" "$APP/Contents/MacOS/Courier"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 cp Resources/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+# COURIER_VERSION=1.2.0 stamps the version shown in About Courier (releases set it from the tag).
+if [[ -n "${COURIER_VERSION:-}" ]]; then
+  /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $COURIER_VERSION" "$APP/Contents/Info.plist"
+  /usr/libexec/PlistBuddy -c "Set :CFBundleVersion ${COURIER_BUILD:-$COURIER_VERSION}" "$APP/Contents/Info.plist"
+fi
 # Sign with a stable identity when one exists, so the Keychain keeps recognising the app
 # across rebuilds (ad-hoc signatures change every build). Override with CODESIGN_IDENTITY.
 IDENTITY="${CODESIGN_IDENTITY:-$(security find-identity -v -p codesigning | awk -F'"' '/Apple Development|Developer ID Application/ {print $2; exit}')}"
-codesign --force --sign "${IDENTITY:--}" "$APP" >/dev/null
+# Hardened runtime is required for notarization; Developer ID builds also get a secure timestamp.
+SIGN_FLAGS=(--force --options runtime)
+if [[ "$IDENTITY" == Developer\ ID\ Application* ]]; then SIGN_FLAGS+=(--timestamp); fi
+codesign "${SIGN_FLAGS[@]}" --sign "${IDENTITY:--}" "$APP" >/dev/null
 echo "Signed with: ${IDENTITY:-ad-hoc}"
 
 echo "Built $APP"

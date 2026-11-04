@@ -47,6 +47,10 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
 - The **History menu** in the menu bar lists your recent requests. Query strings are left out of the menu, since they often carry tokens.
 - Tabs and history are **encrypted on disk**, with the key kept in your Keychain.
 
+## Download
+
+Get the latest **Courier-x.y.z.zip** from [Releases](https://github.com/ja1984/courier/releases/latest), unzip it and drag **Courier.app** to Applications. It's signed with a Developer ID and notarized by Apple, so it opens like any other app. It runs on Apple silicon and Intel Macs with macOS 26 or later.
+
 ## Requirements
 
 - macOS 26 or later
@@ -102,6 +106,16 @@ The build script signs the app with your Apple Development certificate if you ha
 - **HTML previews** run without JavaScript and with no persistent storage. Links open in your browser.
 - **Other data folders:** set `COURIER_DATA_DIR=/some/folder` to run against another folder, handy for demos (the screenshot above was made that way).
 
+## Releasing
+
+Push a version tag and GitHub Actions tests, builds a universal Courier.app, and publishes it as a release:
+
+```bash
+git tag v1.1.0 && git push origin v1.1.0
+```
+
+Running the **Release** workflow by hand from the Actions tab builds the zip as a workflow artifact without publishing a release. Releases are signed with a Developer ID and notarized, using the five repository secrets listed at the top of [`release.yml`](.github/workflows/release.yml). Tagged builds fail without them rather than publish an unsigned app.
+
 ## Project layout
 
 ```
@@ -114,6 +128,7 @@ Tests/
   CourierCoreTests/   Swift Testing suite (`swift test`)
 Resources/       Info.plist and the icon master (AppIcon.png)
 scripts/         build-app.sh (bundle + install), make-icon.sh
+.github/         Release workflow
 ```
 
 ## Known limitations
