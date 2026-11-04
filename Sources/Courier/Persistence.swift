@@ -75,6 +75,8 @@ nonisolated struct Persistence {
 }
 
 /// The 256-bit storage key, kept as a generic password in the login Keychain.
+/// It isn't synced via iCloud, but it travels with the login keychain in account
+/// backups and migrations, like any other saved password.
 nonisolated enum StorageKey {
     private static let service = "dev.courier.app.storage"
     private static let account = "storage-encryption-key"
@@ -112,7 +114,6 @@ nonisolated enum StorageKey {
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
             kSecAttrLabel as String: "Courier storage key",
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
             kSecValueData as String: key.withUnsafeBytes { Data($0) },
         ]
         let addStatus = SecItemAdd(attributes as CFDictionary, nil)

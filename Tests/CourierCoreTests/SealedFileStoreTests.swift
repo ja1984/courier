@@ -49,6 +49,19 @@ import Testing
         #expect(try store.load(Sample.self, name: "tabs") == sample)
     }
 
+    @Test func corruptLegacyFileIsKeptNotDeletedByMigration() throws {
+        let dir = try makeDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try Data("{ not json".utf8).write(to: dir.appending(path: "history.json"))
+        let store = SealedFileStore(directory: dir, key: SymmetricKey(size: .bits256))
+
+        #expect(throws: (any Error).self) { try store.load([Sample].self, name: "history") }
+        // What the app does next: save what it has (nothing). The corrupt original must survive.
+        try store.save([Sample](), name: "history")
+        let files = try FileManager.default.contentsOfDirectory(atPath: dir.path)
+        #expect(files.contains { $0.hasPrefix("history.json.unreadable-") })
+    }
+
     @Test func refusesToSaveWithoutKey() throws {
         let dir = try makeDirectory()
         defer { try? FileManager.default.removeItem(at: dir) }

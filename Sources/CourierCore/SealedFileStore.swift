@@ -6,8 +6,8 @@ import Foundation
 /// - Never writes plaintext. Without a key, saving fails.
 /// - Reads a legacy plaintext `<name>.json` once so it can be migrated, and deletes it
 ///   after the first successful encrypted save.
-/// - A sealed file that can't be decrypted is moved aside instead of being overwritten,
-///   so a temporarily missing key can't destroy data.
+/// - A file that can't be decrypted or decoded is moved aside instead of being overwritten
+///   or deleted, so a missing key or a corrupt file can't destroy data.
 public struct SealedFileStore: Sendable {
     public enum StoreError: Error, Equatable {
         case noKey
@@ -46,15 +46,24 @@ public struct SealedFileStore: Sendable {
                 let plaintext = try Self.open(try Data(contentsOf: sealed), key: key)
                 return try decoder.decode(T.self, from: plaintext)
             } catch {
-                let aside = sealed.appendingPathExtension("unreadable-\(Int(Date().timeIntervalSince1970))")
-                try? FileManager.default.moveItem(at: sealed, to: aside)
-                throw StoreError.unreadable(movedTo: aside)
+                throw StoreError.unreadable(movedTo: Self.moveAside(sealed))
             }
         }
 
         let legacy = legacyURL(name)
         guard FileManager.default.fileExists(atPath: legacy.path) else { return nil }
-        return try decoder.decode(T.self, from: try Data(contentsOf: legacy))
+        do {
+            return try decoder.decode(T.self, from: try Data(contentsOf: legacy))
+        } catch {
+            // Move it out of the way so the migration's first save can't delete it.
+            throw StoreError.unreadable(movedTo: Self.moveAside(legacy))
+        }
+    }
+
+    private static func moveAside(_ url: URL) -> URL {
+        let aside = url.appendingPathExtension("unreadable-\(Int(Date().timeIntervalSince1970))")
+        try? FileManager.default.moveItem(at: url, to: aside)
+        return aside
     }
 
     public func save<T: Encodable>(_ value: T, name: String) throws {

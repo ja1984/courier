@@ -76,10 +76,11 @@ The build script signs the app with your Apple Development certificate if you ha
 ## Data & privacy
 
 - **Tabs and history** (the last 500 requests, including headers) are stored **encrypted** in `~/Library/Application Support/Courier/`:
-  - The encryption is AES-256-GCM. The key is generated once and kept in your login Keychain, tied to this Mac.
+  - The encryption is AES-256-GCM. The key is generated once and kept in your login Keychain.
   - Files from older versions are encrypted and their plain-text copies deleted on first launch.
   - If the key can't be read, Courier tells you and doesn't save that session; it never falls back to plain text.
-  - Because the key never leaves this Mac, encrypted files copied to another Mac or restored from a backup there can't be opened.
+  - A file that can't be opened is renamed (`*.unreadable-<timestamp>`) instead of being overwritten.
+  - The data files alone are unreadable. The key isn't synced via iCloud, but like your other saved passwords it is included when you back up or migrate your whole user account, so a restored account can still open them.
 - **No cookies or cache between requests.** Each request uses a fresh connection, which is also what makes the full DNS/TCP/TLS timing available every time.
 - **HTML previews** run without JavaScript and with no persistent storage. Links open in your browser.
 - **Other data folders:** set `COURIER_DATA_DIR=/some/folder` to run against another folder, handy for demos (the screenshot above was made that way).
