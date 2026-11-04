@@ -1,0 +1,6 @@
+.build/
+build/
+.swiftpm/
+
+# Generated from Resources/AppIcon.png by scripts/make-icon.sh
+Resources/AppIcon.icns
