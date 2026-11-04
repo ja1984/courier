@@ -95,3 +95,42 @@ struct MethodLabel: View {
             .foregroundStyle(method.color)
     }
 }
+
+extension CollectionColor {
+    var color: Color {
+        switch self {
+        case .red: .red
+        case .orange: .orange
+        case .yellow: .yellow
+        case .green: .green
+        case .teal: .teal
+        case .blue: .blue
+        case .purple: .purple
+        case .pink: .pink
+        case .gray: .gray
+        }
+    }
+
+    /// A filled circle for menus, which draw SF Symbols in one color.
+    var swatch: NSImage {
+        let image = NSImage(size: NSSize(width: 12, height: 12), flipped: false) { rect in
+            NSColor(color).setFill()
+            NSBezierPath(ovalIn: rect.insetBy(dx: 1, dy: 1)).fill()
+            return true
+        }
+        return image
+    }
+}
+
+/// The folder mark for a collection: its color, or secondary when it has none.
+struct CollectionMark: View {
+    let color: CollectionColor?
+    var size: CGFloat = 10
+
+    var body: some View {
+        Image(systemName: "folder.fill")
+            .font(.system(size: size))
+            .foregroundStyle(color.map { AnyShapeStyle($0.color) } ?? AnyShapeStyle(.secondary))
+            .accessibilityHidden(true)
+    }
+}

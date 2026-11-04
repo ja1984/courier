@@ -8,6 +8,8 @@ nonisolated struct TabsSnapshot: Codable {
     struct Tab: Codable {
         var id: UUID
         var spec: RequestSpec
+        /// The saved request this tab is linked to (missing in files from older versions).
+        var savedRequestID: UUID?
     }
 
     var tabs: [Tab]
@@ -54,6 +56,9 @@ nonisolated struct Persistence {
 
     func loadTabs() -> TabsSnapshot? { load(TabsSnapshot.self, "tabs") }
     func saveTabs(_ snapshot: TabsSnapshot) { save(snapshot, "tabs") }
+
+    func loadCollections() -> CollectionLibrary { load(CollectionLibrary.self, "collections") ?? CollectionLibrary() }
+    func saveCollections(_ library: CollectionLibrary) { save(library, "collections") }
 
     private func load<T: Decodable>(_ type: T.Type, _ name: String) -> T? {
         do {

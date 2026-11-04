@@ -25,15 +25,11 @@ struct RequestWorkspace: View {
         VSplitView {
             VStack(alignment: .leading, spacing: 10) {
                 URLBar(tab: tab, store: store)
-                Picker("Section", selection: $section) {
-                    ForEach(RequestSection.allCases) { item in
-                        Text(label(for: item)).tag(item)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
-                .help("Edit query parameters, headers or body")
+                TabSwitcher(
+                    selection: $section,
+                    items: RequestSection.allCases.map { TabSwitcher.Item(value: $0, title: label(for: $0)) }
+                )
+                .accessibilityLabel("Request section")
 
                 Group {
                     switch section {

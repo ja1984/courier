@@ -223,47 +223,45 @@ struct ResponsePanel: View {
             if let response = tab.response, !tab.isLoading {
                 ResponseInfoBar(response: response)
                 Spacer()
-                Picker("Response section", selection: $section) {
-                    Text("Body").tag(ResponseSection.body)
-                    Text("Headers (\(response.headers.count))").tag(ResponseSection.headers)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .fixedSize()
-                .help("Show the response body or headers")
-                if section == .body, response.format != .binary {
-                    FormatBadge(response: response)
-                    let modes = BodyViewMode.available(for: response)
-                    if modes.count > 1 {
-                        Picker("View", selection: Binding(get: { mode(for: response) }, set: { preferredMode = $0 })) {
-                            ForEach(modes) { mode in
-                                Text(mode.title).tag(mode).help(mode.help(for: response.format))
-                            }
+                TabSwitcher(selection: $section, items: [
+                    .init(value: ResponseSection.body, title: "Body"),
+                    .init(value: ResponseSection.headers, title: "Headers (\(response.headers.count))"),
+                ])
+                .accessibilityLabel("Response section")
+                // Body controls stay in place on the Headers tab (disabled), so the bar doesn't jump.
+                if response.format != .binary {
+                    Group {
+                        FormatBadge(response: response)
+                            .opacity(section == .headers ? 0.5 : 1)
+                        let modes = BodyViewMode.available(for: response)
+                        if modes.count > 1 {
+                            TabSwitcher(
+                                selection: Binding(get: { mode(for: response) }, set: { preferredMode = $0 }),
+                                items: modes.map { .init(value: $0, title: $0.title, help: $0.help(for: response.format)) }
+                            )
+                            .accessibilityLabel("Body view")
                         }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .fixedSize()
-                        .help("Preview, formatted, or raw body")
-                    }
-                    if mode(for: response) == .preview, response.jsonTree != nil {
-                        ControlGroup {
-                            Button {
-                                treeCommand = JSONTreeView.Command(id: treeCommand.id + 1, expand: true)
-                            } label: {
-                                Image(systemName: "rectangle.expand.vertical")
+                        if mode(for: response) == .preview, response.jsonTree != nil {
+                            ControlGroup {
+                                Button {
+                                    treeCommand = JSONTreeView.Command(id: treeCommand.id + 1, expand: true)
+                                } label: {
+                                    Image(systemName: "rectangle.expand.vertical")
+                                }
+                                .help("Expand all")
+                                .accessibilityLabel("Expand all")
+                                Button {
+                                    treeCommand = JSONTreeView.Command(id: treeCommand.id + 1, expand: false)
+                                } label: {
+                                    Image(systemName: "rectangle.compress.vertical")
+                                }
+                                .help("Collapse all")
+                                .accessibilityLabel("Collapse all")
                             }
-                            .help("Expand all")
-                            .accessibilityLabel("Expand all")
-                            Button {
-                                treeCommand = JSONTreeView.Command(id: treeCommand.id + 1, expand: false)
-                            } label: {
-                                Image(systemName: "rectangle.compress.vertical")
-                            }
-                            .help("Collapse all")
-                            .accessibilityLabel("Collapse all")
+                            .fixedSize()
                         }
-                        .fixedSize()
                     }
+                    .disabled(section == .headers)
                 }
                 Button {
                     if isSearching { closeSearch() } else { openSearch() }

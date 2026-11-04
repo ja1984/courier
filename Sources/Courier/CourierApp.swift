@@ -18,7 +18,7 @@ struct CourierApp: App {
                 }
         }
         .defaultSize(width: 1280, height: 820)
-        .windowToolbarStyle(.unified(showsTitle: false))
+        .windowToolbarStyle(.unified(showsTitle: true))
         .commands { CourierCommands(store: store) }
 
         Settings {
@@ -98,8 +98,19 @@ struct CourierCommands: Commands {
             Button("Close Tab") { store.closeSelectedTab() }
                 .keyboardShortcut("w")
             Divider()
+            Button("Save") { store.saveSelected() }
+                .keyboardShortcut("s")
+                .disabled(store.selectedTab == nil || store.selectedTab?.savedRequestID != nil && store.selectedTab?.hasUnsavedChanges == false)
+            Button("Save As…") { store.saveSelectedAs() }
+                .keyboardShortcut("s", modifiers: [.command, .shift])
+                .disabled(store.selectedTab == nil)
+            Divider()
             Button("Import cURL from Clipboard") { store.importCurlFromClipboard() }
                 .keyboardShortcut("v", modifiers: [.command, .shift])
+            Divider()
+            Button("Import Collections…") { store.importCollections() }
+            Button("Export All Collections…") { store.exportCollections() }
+                .disabled(store.library.isEmpty)
         }
         CommandMenu("Request") {
             Button("Send") { store.sendSelected() }

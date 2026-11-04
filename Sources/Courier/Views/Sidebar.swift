@@ -1,9 +1,89 @@
 import CourierCore
 import SwiftUI
 
-struct HistorySidebar: View {
+enum SidebarMode: String, CaseIterable, Identifiable {
+    case history, collections
+
+    var id: String { rawValue }
+    var title: String {
+        switch self {
+        case .history: "History"
+        case .collections: "Collections"
+        }
+    }
+}
+
+/// History | Collections, sharing one search field.
+struct Sidebar: View {
     @Bindable var store: AppStore
+    @AppStorage("sidebarMode") private var mode = SidebarMode.history
     @State private var search = ""
+    @State private var isAddingCollection = false
+    @State private var newCollectionName = ""
+
+    var body: some View {
+        VStack(spacing: 0) {
+            TabSwitcher(
+                selection: $mode,
+                items: SidebarMode.allCases.map { TabSwitcher.Item(value: $0, title: $0.title) }
+            )
+            .accessibilityLabel("Sidebar")
+            .padding(.horizontal, 10)
+            .padding(.bottom, 6)
+
+            Group {
+                switch mode {
+                case .collections: CollectionsList(store: store, search: search)
+                case .history: HistoryList(store: store, search: search)
+                }
+            }
+            // Fill the column so the switch stays at the top, also above empty states.
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .searchable(text: $search, placement: .sidebar, prompt: mode == .history ? "Search history" : "Search collections")
+        .toolbar {
+            ToolbarItem {
+                Menu {
+                    switch mode {
+                    case .collections:
+                        Button("New Collection…") {
+                            newCollectionName = ""
+                            isAddingCollection = true
+                        }
+                        Button("Save Current Request…") { store.saveSelectedAs() }
+                            .disabled(store.selectedTab == nil)
+                        Divider()
+                        Button("Import…") { store.importCollections() }
+                        Button("Export All…") { store.exportCollections() }
+                            .disabled(store.library.isEmpty)
+                    case .history:
+                        Picker("Group By", selection: $store.historyGrouping) {
+                            ForEach(HistoryGrouping.allCases) { option in
+                                Text(option.title).tag(option)
+                            }
+                        }
+                        .pickerStyle(.inline)
+                        Divider()
+                        Button("Clear History…", role: .destructive) { store.isConfirmingClearHistory = true }
+                            .disabled(store.history.isEmpty)
+                    }
+                } label: {
+                    Label("\(mode.title) Options", systemImage: "ellipsis")
+                }
+                .help("\(mode.title) options")
+            }
+        }
+        .alert("New Collection", isPresented: $isAddingCollection) {
+            TextField("Name", text: $newCollectionName)
+            Button("Create") { store.addCollection(named: newCollectionName) }
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+}
+
+struct HistoryList: View {
+    @Bindable var store: AppStore
+    let search: String
     @State private var collapsedGroups: Set<String> = []
 
     private var grouping: HistoryGrouping { store.historyGrouping }
@@ -49,6 +129,10 @@ struct HistorySidebar: View {
                                 .buttonStyle(.plain)
                                 .contextMenu {
                                     Button("Open in New Tab") { store.newTab(spec: entry.spec) }
+                                    Button("Save to Collection…") {
+                                        store.open(entry.spec)
+                                        store.saveSelectedAs()
+                                    }
                                     Button("Copy as cURL") { store.copyAsCurl(entry.spec) }
                                     Divider()
                                     Button("Delete", role: .destructive) { store.deleteHistory(entry.id) }
@@ -61,6 +145,7 @@ struct HistorySidebar: View {
                                 Text("\(group.entries.count)")
                                     .monospacedDigit()
                                     .foregroundStyle(.tertiary)
+                                    .padding(.trailing, 8)
                             }
                             .help(group.title)
                         }
@@ -69,26 +154,6 @@ struct HistorySidebar: View {
                 .listStyle(.sidebar)
             }
         }
-        .searchable(text: $search, placement: .sidebar, prompt: "Search history")
-        .toolbar {
-            ToolbarItem {
-                Menu {
-                    Picker("Group By", selection: $store.historyGrouping) {
-                        ForEach(HistoryGrouping.allCases) { option in
-                            Text(option.title).tag(option)
-                        }
-                    }
-                    .pickerStyle(.inline)
-                    Divider()
-                    Button("Clear History…", role: .destructive) { store.isConfirmingClearHistory = true }
-                        .disabled(store.history.isEmpty)
-                } label: {
-                    Label("History Options", systemImage: "ellipsis")
-                }
-                .help("History options")
-            }
-        }
-        .navigationTitle("History")
     }
 }
 

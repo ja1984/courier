@@ -4,9 +4,18 @@ import SwiftUI
 struct ContentView: View {
     @Bindable var store: AppStore
 
+    /// "Github · Courier" for a saved request, else the URL of the open request.
+    private var windowSubtitle: String {
+        guard let tab = store.selectedTab else { return "" }
+        if let collection = store.collection(for: tab), let name = tab.savedName {
+            return "\(collection.name) · \(name)"
+        }
+        return tab.spec.url
+    }
+
     var body: some View {
         NavigationSplitView {
-            HistorySidebar(store: store)
+            Sidebar(store: store)
                 .navigationSplitViewColumnWidth(min: 220, ideal: 280, max: 420)
         } detail: {
             VStack(spacing: 0) {
@@ -18,6 +27,8 @@ struct ContentView: View {
                 }
             }
             .background(Theme.content)
+            .navigationTitle("Courier")
+            .navigationSubtitle(windowSubtitle)
         }
         .alert(
             store.alert?.title ?? "",
@@ -27,6 +38,11 @@ struct ContentView: View {
             Button("OK") {}
         } message: { alert in
             Text(alert.message)
+        }
+        .sheet(item: $store.saveRequestTarget) { target in
+            if let tab = store.tabs.first(where: { $0.id == target.tabID }) {
+                SaveRequestSheet(store: store, tab: tab)
+            }
         }
         .confirmationDialog("Clear all history?", isPresented: $store.isConfirmingClearHistory) {
             Button("Clear History", role: .destructive) { store.clearHistory() }
@@ -59,6 +75,7 @@ struct TabBar: View {
                         ForEach(store.tabs) { tab in
                             TabChip(
                                 tab: tab,
+                                collection: store.collection(for: tab),
                                 isSelected: tab.id == store.selectedTabID,
                                 onSelect: {
                                     store.selectedTabID = tab.id
@@ -117,53 +134,78 @@ struct TabBar: View {
 
 private struct TabChip: View {
     let tab: RequestTab
+    /// The collection this tab's saved request is in, if it's linked to one.
+    let collection: RequestCollection?
     let isSelected: Bool
     let onSelect: () -> Void
     let onClose: () -> Void
     let onHoverChange: (Bool) -> Void
     @State private var isHovering = false
 
+    private var tabHelp: String {
+        var lines: [String] = []
+        if !tab.spec.url.isEmpty { lines.append(tab.spec.url) }
+        if let collection { lines.append("Saved in “\(collection.name)”") }
+        lines.append("Middle-click to close")
+        return lines.joined(separator: "\n")
+    }
+
     var body: some View {
         HStack(spacing: 6) {
+            if let collection {
+                // Saved in a collection: a dot in its color (gray when it has none).
+                Circle()
+                    .fill(collection.color.map { AnyShapeStyle($0.color) } ?? AnyShapeStyle(.tertiary))
+                    .frame(width: 7, height: 7)
+                    .accessibilityHidden(true)
+            }
             MethodLabel(method: tab.spec.method)
             Text(tab.title)
-                .font(.system(size: 12))
+                .font(.system(size: 12, weight: isSelected ? .medium : .regular))
+                .foregroundStyle(isSelected ? .primary : .secondary)
                 .lineLimit(1)
                 .truncationMode(.middle)
             if tab.isLoading {
                 ProgressView().controlSize(.mini)
             }
             Button(action: onClose) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 8, weight: .bold))
-                    .frame(width: 14, height: 14)
-                    .contentShape(Rectangle())
+                Group {
+                    // Like an editor: unsaved changes show as a dot that turns into the close button on hover.
+                    if tab.hasUnsavedChanges && !isHovering {
+                        Circle().frame(width: 7, height: 7)
+                    } else {
+                        Image(systemName: "xmark").font(.system(size: 8, weight: .bold))
+                    }
+                }
+                .frame(width: 14, height: 14)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)
-            .opacity(isHovering || isSelected ? 1 : 0)
-            .help("Close tab (⌘W)")
+            .opacity(isHovering || isSelected || tab.hasUnsavedChanges ? 1 : 0)
+            .help(tab.hasUnsavedChanges ? "Unsaved changes. Press ⌘S to save · Close tab (⌘W)" : "Close tab (⌘W)")
             .accessibilityLabel("Close tab")
         }
         .padding(.leading, 10)
         .padding(.trailing, 6)
         .padding(.vertical, 5)
         .frame(maxWidth: 220)
+        // Same soft pill as the other tabs in the app (Keychain Access style).
         .background(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .fill(isSelected ? Color.accentColor.opacity(0.14) : Color.primary.opacity(isHovering ? 0.06 : 0))
+            Capsule(style: .continuous)
+                .fill(Color.primary.opacity(isSelected ? 0.09 : (isHovering ? 0.05 : 0)))
         )
-        .overlay(
-            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                .strokeBorder(isSelected ? Color.accentColor.opacity(0.35) : .clear)
-        )
-        .contentShape(Rectangle())
+        .contentShape(Capsule(style: .continuous))
         .onTapGesture(perform: onSelect)
         .onHover { hovering in
             isHovering = hovering
             onHoverChange(hovering)
         }
-        .help(tab.spec.url.isEmpty ? "Middle-click to close" : "\(tab.spec.url)\nMiddle-click to close")
+        .help(tabHelp)
         .accessibilityElement(children: .combine)
+        .accessibilityValue([
+            collection.map { "In \($0.name)" },
+            tab.hasUnsavedChanges ? "Unsaved changes" : nil,
+        ].compactMap { $0 }.joined(separator: ", "))
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
         .accessibilityAction(.default, onSelect)
         .accessibilityAction(named: "Close", onClose)

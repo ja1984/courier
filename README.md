@@ -43,6 +43,14 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
 **Appearance**
 - **Light, Dark or Auto** (follows macOS), in Settings (<kbd>⌘</kbd><kbd>,</kbd>) or View › Appearance.
 
+**Collections**
+- **Save requests with <kbd>⌘</kbd><kbd>S</kbd>** into named collections. Saved requests are kept until you delete them; they're never trimmed like history.
+- A tab opened from a collection stays linked: a dot marks unsaved changes and <kbd>⌘</kbd><kbd>S</kbd> updates the saved request. **Save As…** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>S</kbd>) makes a copy.
+- Give a collection a color; its tabs show a dot in that color.
+- Rename, duplicate, delete, copy as cURL, or save any history entry to a collection from the right-click menu.
+- **Export and import** collections as JSON files. Secret values (tokens, API keys, cookies, passwords) are left out of exports unless you tick "Include secret values", so files are safe to share by default.
+- **Import from Postman** (Collection v2.0/v2.1): folders become "Folder / Request" names, Bearer/Basic/API-key auth becomes headers or parameters, and JSON, form and GraphQL bodies carry over. `{{variables}}` are kept as text.
+
 **History**
 - Every request is saved and can be grouped **by date or by host**, searched, reopened, copied as cURL or deleted.
 - The **History menu** in the menu bar lists your recent requests. Query strings are left out of the menu, since they often carry tokens.
@@ -90,12 +98,13 @@ The build script signs the app with your Apple Development certificate if you ha
 | Settings | <kbd>⌘</kbd><kbd>,</kbd> |
 | Next / previous tab | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>]</kbd> / <kbd>⇧</kbd><kbd>⌘</kbd><kbd>[</kbd> |
 | Import cURL from clipboard | <kbd>⌘</kbd><kbd>V</kbd> anywhere, or <kbd>⇧</kbd><kbd>⌘</kbd><kbd>V</kbd> |
+| Save / Save As | <kbd>⌘</kbd><kbd>S</kbd> / <kbd>⇧</kbd><kbd>⌘</kbd><kbd>S</kbd> |
 | Copy as cURL | <kbd>⇧</kbd><kbd>⌘</kbd><kbd>C</kbd> |
 | Find in response | <kbd>⌘</kbd><kbd>F</kbd>, then <kbd>⌘</kbd><kbd>G</kbd> / <kbd>⇧</kbd><kbd>⌘</kbd><kbd>G</kbd> |
 
 ## Data & privacy
 
-- **Tabs and history** (the last 500 requests, including headers) are stored **encrypted** in `~/Library/Application Support/Courier/`:
+- **Tabs, collections and history** (the last 500 requests, including headers) are stored **encrypted** in `~/Library/Application Support/Courier/`:
   - The encryption is AES-256-GCM. The key is generated once and kept in your login Keychain.
   - Files from older versions are encrypted and their plain-text copies deleted on first launch.
   - If the key can't be read, Courier tells you and doesn't save that session; it never falls back to plain text.
@@ -104,6 +113,7 @@ The build script signs the app with your Apple Development certificate if you ha
 - **Hidden header values are only hidden on screen.** They're still sent, saved (encrypted) in history, and included in Copy as cURL.
 - **Closed tabs** can be reopened until you quit. They aren't saved to disk.
 - **No cookies or cache between requests.** Each request uses a fresh connection, which is also what makes the full DNS/TCP/TLS timing available every time.
+- **Exported collection files are plain JSON**, not encrypted. By default they don't contain secret values.
 - **HTML previews** run without JavaScript and with no persistent storage. Links open in your browser.
 - **Other data folders:** set `COURIER_DATA_DIR=/some/folder` to run against another folder, handy for demos (the screenshot above was made that way).
 
@@ -124,7 +134,7 @@ Running the **Release** workflow by hand from the Actions tab builds the zip as 
 ```
 Sources/
   CourierCore/   Parsing, formatting, networking and storage: cURL parser/exporter, JSON tree,
-                 XML/HTML formatter, HTTP client with metrics, encrypted file store.
+                 XML/HTML formatter, HTTP client with metrics, collections, encrypted file store.
                  No UI; fully unit tested.
   Courier/       The SwiftUI app: state, Keychain-backed persistence and views.
 Tests/
@@ -137,7 +147,8 @@ scripts/         build-app.sh (bundle + install), make-dmg.sh, notarize.sh, rele
 ## Known limitations
 
 - `-F` multipart fields are imported as URL-encoded form fields, so file uploads aren't supported yet.
-- No environments/variables or saved collections yet.
+- No environments/variables yet, and collections can't be nested or reordered yet.
+- Postman import: file uploads in form-data, and auth types other than Bearer, Basic and API key, aren't carried over (the import tells you).
 - Over HTTP/2 and HTTP/3, header sizes are the compressed on-the-wire bytes, so they're approximate.
 - Redirects are always followed. Each hop is listed, but the network and timing details describe the final response.
 - The JSON tree is limited to 128 levels of nesting. Deeper documents open in Pretty view instead.
