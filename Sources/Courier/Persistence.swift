@@ -17,8 +17,16 @@ nonisolated struct Persistence {
     let directory: URL
     private let logger = Logger(subsystem: "dev.courier.app", category: "persistence")
 
+    /// `COURIER_DATA_DIR` points the app at another folder, e.g. for demos and screenshots,
+    /// without touching your real tabs and history.
     init(directory: URL? = nil) {
-        self.directory = directory ?? URL.applicationSupportDirectory.appending(path: "Courier", directoryHint: .isDirectory)
+        if let directory {
+            self.directory = directory
+        } else if let override = ProcessInfo.processInfo.environment["COURIER_DATA_DIR"], !override.isEmpty {
+            self.directory = URL(fileURLWithPath: override, isDirectory: true)
+        } else {
+            self.directory = URL.applicationSupportDirectory.appending(path: "Courier", directoryHint: .isDirectory)
+        }
     }
 
     func loadHistory() -> [HistoryEntry] { load("history.json") ?? [] }
