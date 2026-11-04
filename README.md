@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img src="docs/screenshot.png" alt="Courier in light and dark mode: colored collections in the sidebar, request tabs, query parameters and a JSON response in a collapsible tree">
+  <img src="docs/screenshot-v2.png" alt="Courier in light and dark mode: colored collections in the sidebar, request tabs, query parameters and a JSON response in a collapsible tree">
 </p>
 
 ## Why
