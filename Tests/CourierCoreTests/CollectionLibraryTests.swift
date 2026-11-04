@@ -124,4 +124,22 @@ import Testing
         #expect(library.collections.first?.name == "Old")
         #expect(library.collections.first?.color == nil)
     }
+
+    @Test func sameContentIgnoresInternalIDs() {
+        var a = RequestSpec(url: "https://api.example.com/search?q=swift&sort=stars")
+        a.setURL(a.url)
+        var b = a
+        b.setURL(b.url) // same URL again: params get new ids
+        #expect(a.params.map(\.id) != b.params.map(\.id))
+        #expect(a.hasSameContent(as: b))
+
+        b.setURL("https://api.example.com/search?q=swift&sort=forks")
+        #expect(!a.hasSameContent(as: b))
+        var c = a
+        c.headers = [KeyValue("Accept", "application/json")]
+        #expect(!a.hasSameContent(as: c))
+        c = a
+        c.params[0].isEnabled = false
+        #expect(!a.hasSameContent(as: c))
+    }
 }

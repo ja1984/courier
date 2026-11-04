@@ -35,10 +35,13 @@ struct CollectionsList: View {
                 } description: {
                     Text("Save a request with ⌘S to keep it here. Saved requests are never removed automatically.")
                 } actions: {
-                    Button("Save Current Request…") { store.saveSelectedAs() }
-                        .disabled(store.selectedTab?.spec.url.isEmpty ?? true)
-                    Button("Import Collections…") { store.importCollections() }
-                        .buttonStyle(.link)
+                    // Stacked: side by side they're wider than the sidebar and the text gets clipped.
+                    VStack(spacing: 8) {
+                        Button("Save Current Request…") { store.saveSelectedAs() }
+                            .disabled(store.selectedTab?.spec.url.isEmpty ?? true)
+                        Button("Import Collections…") { store.importCollections() }
+                            .buttonStyle(.link)
+                    }
                 }
             } else if collections.isEmpty {
                 ContentUnavailableView.search(text: search)

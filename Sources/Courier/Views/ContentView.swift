@@ -4,13 +4,17 @@ import SwiftUI
 struct ContentView: View {
     @Bindable var store: AppStore
 
-    /// "Github · Courier" for a saved request, else the URL of the open request.
+    /// "Github · Courier" for a saved request, else host and path of the open request.
+    /// Never the query string: it often carries tokens, and window titles show up in
+    /// Mission Control, the Window menu and screen sharing.
     private var windowSubtitle: String {
         guard let tab = store.selectedTab else { return "" }
         if let collection = store.collection(for: tab), let name = tab.savedName {
             return "\(collection.name) · \(name)"
         }
-        return tab.spec.url
+        guard let host = tab.spec.hostLabel else { return "" }
+        let path = tab.spec.urlSummary.path
+        return path.isEmpty || path == "/" ? host : host + path
     }
 
     var body: some View {

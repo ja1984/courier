@@ -26,7 +26,8 @@ final class RequestTab: Identifiable {
 
     /// Linked to a saved request and edited since it was saved or opened.
     var hasUnsavedChanges: Bool {
-        savedRequestID != nil && spec != savedSpec
+        guard savedRequestID != nil, let savedSpec else { return false }
+        return !spec.hasSameContent(as: savedSpec)
     }
 
     func link(to request: SavedRequest) {
@@ -56,6 +57,8 @@ final class RequestTab: Identifiable {
 
     /// URL edits from the address field. A pasted cURL command replaces the whole request.
     func updateURL(_ newValue: String) {
+        // Text fields write their value back when they lose focus; that's not an edit.
+        guard newValue != spec.url else { return }
         let isPaste = newValue.count - spec.url.count > 1
         if isPaste, CurlParser.looksLikeCurl(newValue), let parsed = try? CurlParser.parse(newValue) {
             spec = parsed

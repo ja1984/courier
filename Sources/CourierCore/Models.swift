@@ -116,6 +116,15 @@ public struct RequestSpec: Hashable, Codable, Sendable {
         return result
     }
 
+    /// Same request content, ignoring the internal ids of params, headers and form fields
+    /// (re-deriving params from the same URL creates new ids but changes nothing).
+    public func hasSameContent(as other: RequestSpec) -> Bool {
+        func rows(_ items: [KeyValue]) -> [String] { items.map { "\($0.isEnabled)\u{1}\($0.key)\u{1}\($0.value)" } }
+        return method == other.method && url == other.url && bodyKind == other.bodyKind && bodyText == other.bodyText
+            && rows(params) == rows(other.params) && rows(headers) == rows(other.headers)
+            && rows(formFields) == rows(other.formFields)
+    }
+
     /// Host and path for compact display (tab titles, history rows).
     public var urlSummary: (host: String?, path: String) {
         var raw = url.trimmed
