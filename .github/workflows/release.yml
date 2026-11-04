@@ -29,6 +29,8 @@ jobs:
       HAS_SIGNING: ${{ secrets.DEVELOPER_ID_P12 != '' && secrets.NOTARY_API_KEY != '' }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # full history and tags, for the release notes
 
       - name: Signing mode
         run: |
@@ -125,6 +127,10 @@ jobs:
           xcrun stapler staple "$DMG"
           spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
 
+      - name: Release notes
+        run: |
+          ./scripts/release-notes.sh "${{ github.ref_type == 'tag' && github.ref_name || 'HEAD' }}" | tee release-notes.md
+
       - name: Checksums
         run: |
           NAME="${{ steps.package.outputs.name }}"
@@ -148,7 +154,7 @@ jobs:
           gh release create "$GITHUB_REF_NAME" \
             "${{ steps.package.outputs.name }}.dmg" "${{ steps.package.outputs.name }}.zip" SHA256SUMS.txt \
             --title "Courier ${{ steps.version.outputs.version }}" \
-            --generate-notes
+            --notes-file release-notes.md
 
       - name: Clean up signing material
         if: always()
