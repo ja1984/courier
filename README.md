@@ -49,7 +49,7 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
 
 ## Download
 
-Get the latest **Courier-x.y.z.zip** from [Releases](https://github.com/ja1984/courier/releases/latest), unzip it and drag **Courier.app** to Applications. It's signed with a Developer ID and notarized by Apple, so it opens like any other app. It runs on Apple silicon and Intel Macs with macOS 26 or later.
+Get the latest **Courier-x.y.z.dmg** from [Releases](https://github.com/ja1984/courier/releases/latest), open it and drag **Courier** to Applications. A `.zip` of the app and `SHA256SUMS.txt` are attached too. It's signed with a Developer ID and notarized by Apple, so it opens like any other app. It runs on Apple silicon and Intel Macs with macOS 26 or later.
 
 ## Requirements
 
@@ -108,7 +108,7 @@ The build script signs the app with your Apple Development certificate if you ha
 
 ## Releasing
 
-Push a version tag and GitHub Actions tests, builds a universal Courier.app, and publishes it as a release:
+Push a version tag and GitHub Actions tests, builds a universal Courier.app, signs and notarizes it and its disk image, and publishes both as a release:
 
 ```bash
 git tag v1.1.0 && git push origin v1.1.0
@@ -127,7 +127,7 @@ Sources/
 Tests/
   CourierCoreTests/   Swift Testing suite (`swift test`)
 Resources/       Info.plist and the icon master (AppIcon.png)
-scripts/         build-app.sh (bundle + install), make-icon.sh
+scripts/         build-app.sh (bundle + install), make-dmg.sh, notarize.sh, make-icon.sh
 .github/         Release workflow
 ```
 
@@ -138,6 +138,12 @@ scripts/         build-app.sh (bundle + install), make-icon.sh
 - Over HTTP/2 and HTTP/3, header sizes are the compressed on-the-wire bytes, so they're approximate.
 - After redirects, the network and timing details describe the final hop.
 - The JSON tree is limited to 128 levels of nesting. Deeper documents open in Pretty view instead.
+
+## Built with AI, free of AI
+
+Courier was written with the help of an AI coding assistant ([Claude Code](https://claude.com/claude-code)); commits made that way say so in their `Co-Authored-By` line.
+
+The app itself contains no AI. It has no AI features, it doesn't talk to any AI service, and it has no analytics or telemetry. It only connects to the servers you send requests to, plus, in HTML Preview, whatever images and stylesheets that page loads, just like a browser would.
 
 ## License
 

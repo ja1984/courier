@@ -92,46 +92,53 @@ jobs:
           lipo -archs build/Courier.app/Contents/MacOS/Courier
           codesign --verify --deep --strict --verbose=2 build/Courier.app
 
-      - name: Notarize and staple
+      - name: Notarize the app
         if: env.HAS_SIGNING == 'true'
         env:
           NOTARY_API_KEY: ${{ secrets.NOTARY_API_KEY }}
           NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
           NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
         run: |
-          KEY="$RUNNER_TEMP/AuthKey.p8"
-          echo "$NOTARY_API_KEY" | base64 --decode > "$KEY"
+          echo "$NOTARY_API_KEY" | base64 --decode > "$RUNNER_TEMP/AuthKey.p8"
+          echo "NOTARY_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
           ditto -c -k --keepParent build/Courier.app "$RUNNER_TEMP/notarize.zip"
-          xcrun notarytool submit "$RUNNER_TEMP/notarize.zip" \
-            --key "$KEY" --key-id "$NOTARY_API_KEY_ID" --issuer "$NOTARY_API_ISSUER_ID" \
-            --wait --timeout 30m --output-format json | tee "$RUNNER_TEMP/notary.json" || true
-          # The status check below reports failures, after fetching Apple's log.
-          STATUS="$(plutil -extract status raw "$RUNNER_TEMP/notary.json")"
-          if [[ "$STATUS" != "Accepted" ]]; then
-            ID="$(plutil -extract id raw "$RUNNER_TEMP/notary.json")"
-            xcrun notarytool log "$ID" --key "$KEY" --key-id "$NOTARY_API_KEY_ID" --issuer "$NOTARY_API_ISSUER_ID"
-            echo "::error::Notarization status: $STATUS"
-            exit 1
-          fi
+          NOTARY_KEY_PATH="$RUNNER_TEMP/AuthKey.p8" ./scripts/notarize.sh "$RUNNER_TEMP/notarize.zip"
           xcrun stapler staple build/Courier.app
           spctl --assess --type execute --verbose=2 build/Courier.app
 
       - name: Package
         id: package
         run: |
-          ZIP="Courier-${{ steps.version.outputs.version }}.zip"
-          ditto -c -k --keepParent build/Courier.app "$ZIP"
-          shasum -a 256 "$ZIP" | tee "$ZIP.sha256"
-          echo "zip=$ZIP" >> "$GITHUB_OUTPUT"
+          NAME="Courier-${{ steps.version.outputs.version }}"
+          ditto -c -k --keepParent build/Courier.app "$NAME.zip"
+          ./scripts/make-dmg.sh "$NAME.dmg"
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+
+      - name: Notarize the disk image
+        if: env.HAS_SIGNING == 'true'
+        env:
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+        run: |
+          DMG="${{ steps.package.outputs.name }}.dmg"
+          ./scripts/notarize.sh "$DMG"
+          xcrun stapler staple "$DMG"
+          spctl --assess --type open --context context:primary-signature --verbose=2 "$DMG"
+
+      - name: Checksums
+        run: |
+          NAME="${{ steps.package.outputs.name }}"
+          shasum -a 256 "$NAME.dmg" "$NAME.zip" | tee SHA256SUMS.txt
 
       - name: Upload artifact
         if: github.ref_type != 'tag'
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.package.outputs.zip }}
+          name: ${{ steps.package.outputs.name }}
           path: |
-            ${{ steps.package.outputs.zip }}
-            ${{ steps.package.outputs.zip }}.sha256
+            ${{ steps.package.outputs.name }}.dmg
+            ${{ steps.package.outputs.name }}.zip
+            SHA256SUMS.txt
 
       - name: Publish release
         if: github.ref_type == 'tag'
@@ -139,7 +146,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" \
-            "${{ steps.package.outputs.zip }}" "${{ steps.package.outputs.zip }}.sha256" \
+            "${{ steps.package.outputs.name }}.dmg" "${{ steps.package.outputs.name }}.zip" SHA256SUMS.txt \
             --title "Courier ${{ steps.version.outputs.version }}" \
             --generate-notes
 
