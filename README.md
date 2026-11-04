@@ -6,16 +6,16 @@
 
 <p align="center">
   A native, fast and simple HTTP client for macOS.<br>
-  Paste a cURL command, hit <kbd>⌘</kbd><kbd>↩</kbd>, and read the response.
+  Paste a cURL command, hit <kbd>⌘</kbd><kbd>↩</kbd>, read the response, and save it to a collection.
 </p>
 
 <p align="center">
-  <img src="docs/screenshot.png" alt="Courier showing a JSON response in a collapsible tree, with request history in the sidebar">
+  <img src="docs/screenshot.png" alt="Courier in light and dark mode: colored collections in the sidebar, request tabs, query parameters and a JSON response in a collapsible tree">
 </p>
 
 ## Why
 
-Courier is a small SwiftUI app for the 90% of API work that doesn't need an account, workspaces or a heavyweight Electron app. It starts instantly, follows the macOS 26 design (light and dark), and keeps everything on your Mac.
+Courier is a small SwiftUI app for the 90% of API work that doesn't need an account, workspaces or a heavyweight Electron app. It starts instantly, follows the macOS 26 design (light and dark), keeps everything on your Mac, encrypted, and can bring your Postman collections along.
 
 ## Features
 
@@ -24,6 +24,14 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
 - **Query params stay in sync with the URL.** Edit either one, and switch individual params and headers on or off.
 - **Secrets stay hidden.** Values of headers like `Authorization`, `Cookie`, `X-API-Key` or anything named with "token", "secret" or "key" show as dots until you hover over the value or edit it. You can turn this off in Settings (<kbd>⌘</kbd><kbd>,</kbd>).
 - **Body** as JSON (highlighted, with Beautify), plain text, or form fields. Content-Type is set for you unless you set it yourself.
+
+**Collections**
+- **Save requests with <kbd>⌘</kbd><kbd>S</kbd>** into named collections. Saved requests are kept until you delete them; they're never trimmed like history.
+- A tab opened from a collection stays linked: a dot marks unsaved changes and <kbd>⌘</kbd><kbd>S</kbd> updates the saved request. **Save As…** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>S</kbd>) makes a copy.
+- Give a collection a color; its tabs show a dot in that color.
+- Rename, duplicate, delete, copy as cURL, or save any history entry to a collection from the right-click menu.
+- **Export and import** collections as JSON files. Secret values (tokens, API keys, cookies, passwords) are left out of exports unless you tick "Include secret values", so files are safe to share by default.
+- **Import from Postman** (Collection v2.0/v2.1): folders become "Folder / Request" names, Bearer/Basic/API-key auth becomes headers or parameters, and JSON, form and GraphQL bodies carry over. `{{variables}}` are kept as text.
 
 **cURL**
 - **Paste anywhere.** <kbd>⌘</kbd><kbd>V</kbd> with a cURL command on the clipboard opens it in a new tab.
@@ -42,23 +50,16 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
 
 **Appearance**
 - **Light, Dark or Auto** (follows macOS), in Settings (<kbd>⌘</kbd><kbd>,</kbd>) or View › Appearance.
-
-**Collections**
-- **Save requests with <kbd>⌘</kbd><kbd>S</kbd>** into named collections. Saved requests are kept until you delete them; they're never trimmed like history.
-- A tab opened from a collection stays linked: a dot marks unsaved changes and <kbd>⌘</kbd><kbd>S</kbd> updates the saved request. **Save As…** (<kbd>⇧</kbd><kbd>⌘</kbd><kbd>S</kbd>) makes a copy.
-- Give a collection a color; its tabs show a dot in that color.
-- Rename, duplicate, delete, copy as cURL, or save any history entry to a collection from the right-click menu.
-- **Export and import** collections as JSON files. Secret values (tokens, API keys, cookies, passwords) are left out of exports unless you tick "Include secret values", so files are safe to share by default.
-- **Import from Postman** (Collection v2.0/v2.1): folders become "Folder / Request" names, Bearer/Basic/API-key auth becomes headers or parameters, and JSON, form and GraphQL bodies carry over. `{{variables}}` are kept as text.
+- Follows the macOS 26 look: Liquid Glass sidebar, text tabs like Apple's own apps, and the open request in the window title.
 
 **History**
-- Every request is saved and can be grouped **by date or by host**, searched, reopened, copied as cURL or deleted.
+- The last 500 requests are kept and can be grouped **by date or by host**, searched, reopened, copied as cURL, saved to a collection or deleted.
 - The **History menu** in the menu bar lists your recent requests. Query strings are left out of the menu, since they often carry tokens.
-- Tabs and history are **encrypted on disk**, with the key kept in your Keychain.
+- Tabs, collections and history are **encrypted on disk**, with the key kept in your Keychain.
 
 ## Download
 
-Get the latest **Courier-x.y.z.dmg** from [Releases](https://github.com/ja1984/courier/releases/latest), open it and drag **Courier** to Applications. A `.zip` of the app and `SHA256SUMS.txt` are attached too. It's signed with a Developer ID and notarized by Apple, so it opens like any other app. It runs on Apple silicon and Intel Macs with macOS 26 or later.
+Releases are on their way. Once published, get the latest **Courier-x.y.z.dmg** from [Releases](https://github.com/ja1984/courier/releases/latest), open it and drag **Courier** to Applications. A `.zip` of the app and `SHA256SUMS.txt` are attached too. It's signed with a Developer ID and notarized by Apple, so it opens like any other app. It runs on Apple silicon and Intel Macs with macOS 26 or later.
 
 ## Requirements
 
