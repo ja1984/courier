@@ -15,7 +15,7 @@
 
 ## Why
 
-Courier is a small SwiftUI app for the 90% of API work that doesn't need an account, workspaces or a heavyweight Electron app. It starts instantly, follows the macOS 26 design, and keeps everything on your Mac.
+Courier is a small SwiftUI app for the 90% of API work that doesn't need an account, workspaces or a heavyweight Electron app. It starts instantly, follows the macOS 26 design (light and dark), and keeps everything on your Mac.
 
 ## Features
 
@@ -38,6 +38,9 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
   - XML and HTML are pretty-printed without rewriting their content.
 - **Search** with <kbd>⌘</kbd><kbd>F</kbd> works across every view: highlighted matches and next/previous in text, matches revealed in the JSON tree, and filtering for headers.
 - **Details on click:** what the status code means, a timing waterfall (DNS, TCP, TLS, time to first byte, download), request and response sizes (compressed and uncompressed), HTTP version, IP addresses, TLS version and cipher, and the server certificate.
+
+**Appearance**
+- **Light, Dark or Auto** (follows macOS), in Settings (<kbd>⌘</kbd><kbd>,</kbd>) or View › Appearance.
 
 **History**
 - Every request is saved and can be grouped **by date or by host**, searched, reopened, copied as cURL or deleted.

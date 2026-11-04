@@ -6,11 +6,13 @@ import SwiftUI
 struct CourierApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @State private var store = AppStore()
+    @AppStorage(SettingsKey.appearance) private var appearance = AppearanceSetting.system
 
     var body: some Scene {
         Window("Courier", id: "main") {
             ContentView(store: store)
                 .frame(minWidth: 940, minHeight: 600)
+                .onChange(of: appearance, initial: true) { appearance.apply() }
                 .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
                     store.saveTabs()
                 }
@@ -37,6 +39,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 struct CourierCommands: Commands {
     @Bindable var store: AppStore
+    @AppStorage(SettingsKey.appearance) private var appearance = AppearanceSetting.system
     private static let recentLimit = 15
 
     /// Most recent first, one item per method + URL.
@@ -62,6 +65,11 @@ struct CourierCommands: Commands {
 
     var body: some Commands {
         CommandGroup(after: .sidebar) {
+            Picker("Appearance", selection: $appearance) {
+                ForEach(AppearanceSetting.allCases) { option in
+                    Text(option.title).tag(option)
+                }
+            }
             Picker("Group History By", selection: $store.historyGrouping) {
                 ForEach(HistoryGrouping.allCases) { option in
                     Text(option.title).tag(option)
