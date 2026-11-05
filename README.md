@@ -59,7 +59,7 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
 
 ## Download
 
-Releases are on their way. Once published, get the latest **Courier-x.y.z.dmg** from [Releases](https://github.com/ja1984/courier/releases/latest), open it and drag **Courier** to Applications. A `.zip` of the app and `SHA256SUMS.txt` are attached too. It's signed with a Developer ID and notarized by Apple, so it opens like any other app. It runs on Apple silicon and Intel Macs with macOS 26 or later.
+Get the latest **Courier-x.y.z.dmg** from [Releases](https://github.com/ja1984/courier/releases/latest), open it and drag **Courier** to Applications. A `.zip` of the app and `SHA256SUMS.txt` are attached too. It's signed with a Developer ID and notarized by Apple, so it opens like any other app. It runs on Apple silicon and Intel Macs with macOS 26 or later.
 
 ## Requirements
 
