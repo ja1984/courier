@@ -241,25 +241,6 @@ struct ResponsePanel: View {
                             )
                             .accessibilityLabel("Body view")
                         }
-                        if mode(for: response) == .preview, response.jsonTree != nil {
-                            ControlGroup {
-                                Button {
-                                    treeCommand = JSONTreeView.Command(id: treeCommand.id + 1, expand: true)
-                                } label: {
-                                    Image(systemName: "rectangle.expand.vertical")
-                                }
-                                .help("Expand all")
-                                .accessibilityLabel("Expand all")
-                                Button {
-                                    treeCommand = JSONTreeView.Command(id: treeCommand.id + 1, expand: false)
-                                } label: {
-                                    Image(systemName: "rectangle.compress.vertical")
-                                }
-                                .help("Collapse all")
-                                .accessibilityLabel("Collapse all")
-                            }
-                            .fixedSize()
-                        }
                     }
                     .disabled(section == .headers)
                 }
@@ -287,6 +268,34 @@ struct ResponsePanel: View {
         }
         .padding(.horizontal, 14)
         .frame(height: 42)
+    }
+
+    private var treeControls: some View {
+        HStack(spacing: 2) {
+            Button {
+                treeCommand = JSONTreeView.Command(id: treeCommand.id + 1, expand: true)
+            } label: {
+                Image(systemName: "rectangle.expand.vertical").frame(width: 22, height: 20)
+            }
+            .help("Expand all")
+            .accessibilityLabel("Expand all")
+            Divider().frame(height: 14)
+            Button {
+                treeCommand = JSONTreeView.Command(id: treeCommand.id + 1, expand: false)
+            } label: {
+                Image(systemName: "rectangle.compress.vertical").frame(width: 22, height: 20)
+            }
+            .help("Collapse all")
+            .accessibilityLabel("Collapse all")
+        }
+        .buttonStyle(.borderless)
+        .padding(.horizontal, 4)
+        .padding(.vertical, 2)
+        .background(.regularMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(.separator.opacity(0.6)))
+        .padding(.top, 8)
+        // Clear of the vertical scroller, which is up to ~16pt wide (hovered or "always show").
+        .padding(.trailing, 20)
     }
 
     @ViewBuilder
@@ -335,6 +344,8 @@ struct ResponsePanel: View {
                         currentMatch: currentIndex(results).map { results.treeMatches[$0] }
                     )
                     .id(response.id)
+                    // Floating over the tree so switching views doesn't shift the header controls.
+                    .overlay(alignment: .topTrailing) { treeControls }
                 } else {
                     HTMLPreview(html: text, baseURL: response.finalURL, find: htmlFind) { found in
                         htmlFound = found
