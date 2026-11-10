@@ -10,6 +10,11 @@
 </p>
 
 <p align="center">
+  <a href="https://ja1984.github.io/courier/"><b>Website</b></a> ·
+  <a href="https://github.com/ja1984/courier/releases/latest"><b>Download</b></a>
+</p>
+
+<p align="center">
   <img src="docs/screenshot-v2.png" alt="Courier in light and dark mode: colored collections in the sidebar, request tabs, query parameters and a JSON response in a collapsible tree">
 </p>
 
