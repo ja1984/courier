@@ -2,14 +2,58 @@ import Foundation
 import Security
 import Synchronization
 
-/// URLSession delegate that captures task metrics and the server's certificate.
+/// How cookies follow redirects: cookies set by each hop join the jar's, and the request's
+/// own cookies only go to the host they were written for.
+struct RedirectCookies: Sendable {
+    var jar: CookieJar?
+    var requestCookies: [CookiePair]
+    var originalHost: String?
+
+    /// The Cookie header for the next hop, given the cookies received so far.
+    func header(for url: URL, received: [StoredCookie], at now: Date = Date()) -> String? {
+        var working = jar ?? CookieJar()
+        working.store(received, at: now)
+        let ownCookies = url.host()?.lowercased() == originalHost?.lowercased() ? requestCookies : []
+        return CookieJar.cookieHeader(jar: working.cookies(for: url, at: now), request: ownCookies)
+    }
+}
+
+/// URLSession delegate that captures task metrics and the server's certificate,
+/// and carries cookies across redirects.
 final class MetricsCollector: NSObject, URLSessionTaskDelegate, Sendable {
     private struct State {
         var metrics: URLSessionTaskMetrics?
         var certificate: CertificateSummary?
+        var receivedCookies: [StoredCookie] = []
     }
 
     private let state = Mutex(State())
+    private let cookies: RedirectCookies
+
+    init(cookies: RedirectCookies = RedirectCookies(requestCookies: [])) {
+        self.cookies = cookies
+    }
+
+    /// Cookies set by redirect responses (the final response's are read separately).
+    var receivedCookies: [StoredCookie] { state.withLock { $0.receivedCookies } }
+
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest
+    ) async -> URLRequest? {
+        let received = state.withLock { state in
+            state.receivedCookies += StoredCookie.fromResponse(response)
+            return state.receivedCookies
+        }
+        var next = request
+        next.httpShouldHandleCookies = false
+        if let url = request.url {
+            next.setValue(cookies.header(for: url, received: received), forHTTPHeaderField: "Cookie")
+        }
+        return next
+    }
 
     func urlSession(_ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {
         state.withLock { $0.metrics = metrics }

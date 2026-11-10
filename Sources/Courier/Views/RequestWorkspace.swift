@@ -2,7 +2,7 @@ import CourierCore
 import SwiftUI
 
 private enum RequestSection: String, CaseIterable, Identifiable {
-    case params, headers, body
+    case params, headers, cookies, body
     var id: String { rawValue }
 }
 
@@ -51,6 +51,8 @@ struct RequestWorkspace: View {
                             masksSecrets: true,
                             suggestions: headerSuggestions
                         )
+                    case .cookies:
+                        CookiesEditor(tab: tab, store: store)
                     case .body:
                         BodyEditor(spec: $tab.spec)
                     }
@@ -76,6 +78,9 @@ struct RequestWorkspace: View {
         case .headers:
             let count = tab.spec.enabledHeaders.count
             return count > 0 ? "Headers (\(count))" : "Headers"
+        case .cookies:
+            let count = CookiesEditor.sentCount(spec: tab.spec, store: store)
+            return count > 0 ? "Cookies (\(count))" : "Cookies"
         case .body:
             return tab.spec.bodyKind == .none ? "Body" : "Body · \(tab.spec.bodyKind.title)"
         }

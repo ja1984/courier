@@ -10,8 +10,13 @@ public enum CurlExporter {
         first += " " + shellQuote(spec.url.trimmed)
 
         var lines = [first]
-        for header in spec.effectiveHeaders {
+        for header in spec.effectiveHeaders where header.name.caseInsensitiveCompare("Cookie") != .orderedSame {
             lines.append("-H " + shellQuote("\(header.name): \(header.value)"))
+        }
+        // The request's own cookies (not the cookie jar's, which may hold your sessions).
+        let cookies = spec.requestCookies
+        if !cookies.isEmpty {
+            lines.append("-b " + shellQuote(CookiePair.header(cookies)))
         }
         if let body = spec.encodedBody {
             lines.append("--data-raw " + shellQuote(body))

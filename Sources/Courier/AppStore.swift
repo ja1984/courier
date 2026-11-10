@@ -67,7 +67,8 @@ final class RequestTab: Identifiable {
         spec.setURL(newValue)
     }
 
-    func send(onFinish: @escaping (HistoryEntry) -> Void) {
+    /// `onFinish` gets the history entry and the cookies the response set.
+    func send(jar: CookieJar?, onFinish: @escaping (HistoryEntry, [StoredCookie]) -> Void) {
         task?.cancel()
         let token = UUID()
         requestToken = token
@@ -78,18 +79,21 @@ final class RequestTab: Identifiable {
         task = Task { [weak self] in
             let started = Date()
             do {
-                let response = try await HTTPClient.send(spec)
+                let response = try await HTTPClient.send(spec, jar: jar)
                 guard let self, self.requestToken == token else { return }
                 self.response = response
                 self.isLoading = false
-                onFinish(HistoryEntry(date: started, spec: spec, statusCode: response.statusCode, durationMs: response.durationMs))
+                onFinish(
+                    HistoryEntry(date: started, spec: spec, statusCode: response.statusCode, durationMs: response.durationMs),
+                    response.receivedCookies
+                )
             } catch {
                 guard let self, self.requestToken == token else { return }
                 self.isLoading = false
                 guard !Self.isCancellation(error) else { return }
                 self.response = nil
                 self.errorMessage = error.localizedDescription
-                onFinish(HistoryEntry(date: started, spec: spec, errorMessage: error.localizedDescription))
+                onFinish(HistoryEntry(date: started, spec: spec, errorMessage: error.localizedDescription), [])
             }
         }
     }
@@ -125,6 +129,8 @@ final class AppStore {
     var selectedTabID: UUID?
     var history: [HistoryEntry]
     var library: CollectionLibrary
+    /// Cookies remembered from responses (when "Remember cookies" is on in Settings).
+    var cookieJar: CookieJar
     var alert: AppAlert?
     var saveRequestTarget: SaveRequestTarget?
     /// Preselected in the save sheet: the collection used last.
@@ -148,6 +154,9 @@ final class AppStore {
         history = persistence.loadHistory()
         let library = persistence.loadCollections()
         self.library = library
+        var jar = persistence.loadCookies()
+        jar.removeExpired()
+        cookieJar = jar
         let snapshot = persistence.loadTabs()
         tabs = snapshot?.tabs.map { saved in
             let tab = RequestTab(id: saved.id, spec: saved.spec)
@@ -362,8 +371,45 @@ final class AppStore {
 
     func send(_ tab: RequestTab) {
         guard !tab.spec.url.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-        tab.send { [weak self] entry in self?.record(entry) }
+        let remember = rememberCookies
+        tab.send(jar: remember ? cookieJar : nil) { [weak self] entry, cookies in
+            self?.record(entry)
+            if remember { self?.storeCookies(cookies) }
+        }
         saveTabs()
+    }
+
+    // MARK: Cookies
+
+    /// On unless turned off in Settings.
+    var rememberCookies: Bool {
+        UserDefaults.standard.object(forKey: SettingsKey.rememberCookies) as? Bool ?? true
+    }
+
+    private func storeCookies(_ cookies: [StoredCookie]) {
+        guard !cookies.isEmpty else { return }
+        cookieJar.store(cookies)
+        persistence.saveCookies(cookieJar)
+    }
+
+    func setCookieValue(_ value: String, for id: StoredCookie.ID) {
+        cookieJar.setValue(value, for: id)
+        persistence.saveCookies(cookieJar)
+    }
+
+    func deleteCookie(_ id: StoredCookie.ID) {
+        cookieJar.remove(id)
+        persistence.saveCookies(cookieJar)
+    }
+
+    func clearCookies(domain: String) {
+        cookieJar.removeAll(domain: domain)
+        persistence.saveCookies(cookieJar)
+    }
+
+    func clearAllCookies() {
+        cookieJar.removeAll()
+        persistence.saveCookies(cookieJar)
     }
 
     func sendSelected() {

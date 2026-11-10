@@ -55,6 +55,7 @@ public enum CurlParser {
         var method: String?
         var url: String?
         var headers: [KeyValue] = []
+        var cookies: [CookiePair] = []
         var dataParts: [String] = []
         var formParts: [KeyValue] = []
         var urlQueryParts: [String] = []
@@ -107,7 +108,7 @@ public enum CurlParser {
             case "-b", "--cookie":
                 let cookie = try takeValue(flag, inline: inline)
                 // Without `=` the value is a cookie file path, which we can't use.
-                if cookie.contains("=") { headers.append(KeyValue("Cookie", cookie)) }
+                if cookie.contains("=") { cookies += CookiePair.parse(cookie) }
             case "-A", "--user-agent":
                 headers.append(KeyValue("User-Agent", try takeValue(flag, inline: inline)))
             case "-e", "--referer":
@@ -153,9 +154,13 @@ public enum CurlParser {
         }
 
         let hasBody = !dataParts.isEmpty || !formParts.isEmpty
+        // Cookies go to the Cookies tab, whether they came from -b or a Cookie header.
+        let isCookie = { (header: KeyValue) in header.key.caseInsensitiveCompare("Cookie") == .orderedSame }
+        cookies = headers.filter(isCookie).flatMap { CookiePair.parse($0.value) } + cookies
         var spec = RequestSpec(
             method: HTTPMethod(rawValue: method ?? (forceGet || !hasBody ? "GET" : "POST")),
-            headers: headers
+            headers: headers.filter { !isCookie($0) },
+            cookies: CookiePair.merged(cookies).map { KeyValue($0.name, $0.value) }
         )
         spec.setURL(rawURL)
 

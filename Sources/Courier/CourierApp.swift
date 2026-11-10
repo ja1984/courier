@@ -22,7 +22,7 @@ struct CourierApp: App {
         .commands { CourierCommands(store: store) }
 
         Settings {
-            SettingsView()
+            SettingsView(store: store)
         }
     }
 }

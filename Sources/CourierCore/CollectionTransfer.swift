@@ -40,7 +40,7 @@ public enum CollectionTransfer {
     // MARK: Export
 
     /// Courier's export file. Without `includeSecrets`, values of secret-looking headers and
-    /// query parameters (see `SensitiveHeaders`) are written empty, keeping their names.
+    /// query parameters (see `SensitiveHeaders`) and of all cookies are written empty, keeping their names.
     public static func export(_ collections: [RequestCollection], includeSecrets: Bool, at date: Date = Date()) throws -> Data {
         let exported = includeSecrets ? collections : collections.map(withoutSecrets)
         let encoder = JSONEncoder()
@@ -66,6 +66,12 @@ public enum CollectionTransfer {
             spec.setParams(spec.params.map(blankIfSecret))
         }
         spec.formFields = spec.formFields.map(blankIfSecret)
+        // Any cookie can be a session.
+        spec.cookies = spec.cookies.map { cookie in
+            var cookie = cookie
+            cookie.value = ""
+            return cookie
+        }
         // user:password@host
         if var components = URLComponents(string: spec.url), components.password != nil {
             components.password = nil

@@ -49,6 +49,8 @@ public struct RequestSpec: Hashable, Codable, Sendable {
     public var bodyKind: BodyKind
     public var bodyText: String
     public var formFields: [KeyValue]
+    /// Cookies set on this request (the Cookies tab), sent in the Cookie header.
+    public var cookies: [KeyValue]
 
     public init(
         method: HTTPMethod = .get,
@@ -57,7 +59,8 @@ public struct RequestSpec: Hashable, Codable, Sendable {
         headers: [KeyValue] = [],
         bodyKind: BodyKind = .none,
         bodyText: String = "",
-        formFields: [KeyValue] = []
+        formFields: [KeyValue] = [],
+        cookies: [KeyValue] = []
     ) {
         self.method = method
         self.url = url
@@ -66,6 +69,7 @@ public struct RequestSpec: Hashable, Codable, Sendable {
         self.bodyKind = bodyKind
         self.bodyText = bodyText
         self.formFields = formFields
+        self.cookies = cookies
     }
 
     /// Update the URL and re-derive params from its query, keeping disabled params.
@@ -78,6 +82,18 @@ public struct RequestSpec: Hashable, Codable, Sendable {
     public mutating func setParams(_ newParams: [KeyValue]) {
         params = newParams
         url = URLQuery.replacingQuery(in: url, with: newParams)
+    }
+
+    /// The request's own cookies: those in Cookie headers, then the Cookies tab.
+    /// A later cookie replaces an earlier one with the same name.
+    public var requestCookies: [CookiePair] {
+        let fromHeaders = headers
+            .filter { $0.isEnabled && $0.key.trimmed.caseInsensitiveCompare("Cookie") == .orderedSame }
+            .flatMap { CookiePair.parse($0.value) }
+        let fromTab = cookies
+            .filter { $0.isEnabled && !$0.key.trimmed.isEmpty }
+            .map { CookiePair(name: $0.key.trimmed, value: $0.value) }
+        return CookiePair.merged(fromHeaders + fromTab)
     }
 
     public var enabledHeaders: [KeyValue] {
@@ -122,7 +138,7 @@ public struct RequestSpec: Hashable, Codable, Sendable {
         func rows(_ items: [KeyValue]) -> [String] { items.map { "\($0.isEnabled)\u{1}\($0.key)\u{1}\($0.value)" } }
         return method == other.method && url == other.url && bodyKind == other.bodyKind && bodyText == other.bodyText
             && rows(params) == rows(other.params) && rows(headers) == rows(other.headers)
-            && rows(formFields) == rows(other.formFields)
+            && rows(formFields) == rows(other.formFields) && rows(cookies) == rows(other.cookies)
     }
 
     /// Host and path for compact display (tab titles, history rows).
@@ -162,4 +178,19 @@ public struct HistoryEntry: Identifiable, Hashable, Codable, Sendable {
 
 extension StringProtocol {
     var trimmed: String { trimmingCharacters(in: .whitespacesAndNewlines) }
+}
+
+extension RequestSpec {
+    /// Decodes files from older versions too, which have no `cookies`.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        method = try container.decode(HTTPMethod.self, forKey: .method)
+        url = try container.decode(String.self, forKey: .url)
+        params = try container.decode([KeyValue].self, forKey: .params)
+        headers = try container.decode([KeyValue].self, forKey: .headers)
+        bodyKind = try container.decode(BodyKind.self, forKey: .bodyKind)
+        bodyText = try container.decode(String.self, forKey: .bodyText)
+        formFields = try container.decode([KeyValue].self, forKey: .formFields)
+        cookies = try container.decodeIfPresent([KeyValue].self, forKey: .cookies) ?? []
+    }
 }

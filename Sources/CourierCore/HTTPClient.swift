@@ -19,7 +19,8 @@ public struct HTTPResponse: Sendable {
         body: Data,
         duration: Duration,
         finalURL: URL?,
-        metrics: ResponseMetrics? = nil
+        metrics: ResponseMetrics? = nil,
+        receivedCookies: [StoredCookie] = []
     ) {
         let clock = ContinuousClock()
         let processingStart = clock.now
@@ -28,6 +29,7 @@ public struct HTTPResponse: Sendable {
         self.body = body
         self.duration = duration
         self.finalURL = finalURL
+        self.receivedCookies = receivedCookies
         let text = String(data: body, encoding: .utf8)
         self.text = text
         let contentType = headers.first { $0.key.caseInsensitiveCompare("Content-Type") == .orderedSame }?.value
@@ -43,6 +45,8 @@ public struct HTTPResponse: Sendable {
     public let id = UUID()
     /// Collapsible tree for JSON bodies.
     public let jsonTree: JSONTree?
+    /// Cookies set by the response, including by redirects on the way, in order.
+    public let receivedCookies: [StoredCookie]
     /// Timing, size and connection details, when the system provided them.
     public let metrics: ResponseMetrics?
 
@@ -76,7 +80,9 @@ public enum RequestBuildError: Error, Equatable, LocalizedError {
 }
 
 public enum HTTPClient {
-    public static func makeURLRequest(from spec: RequestSpec) throws -> URLRequest {
+    /// Builds the request. Cookies are sent as one Cookie header: those from the jar that match
+    /// the URL, overridden by the request's own (Cookie headers and the Cookies tab).
+    public static func makeURLRequest(from spec: RequestSpec, jar: CookieJar? = nil, at now: Date = Date()) throws -> URLRequest {
         var raw = spec.url.trimmed
         guard !raw.isEmpty else { throw RequestBuildError.emptyURL }
         if !raw.contains("://") { raw = "http://" + raw }
@@ -86,8 +92,14 @@ public enum HTTPClient {
         request.httpMethod = spec.method.rawValue
         request.cachePolicy = .reloadIgnoringLocalAndRemoteCacheData
         request.timeoutInterval = 60
-        for header in spec.effectiveHeaders {
+        for header in spec.effectiveHeaders where header.name.caseInsensitiveCompare("Cookie") != .orderedSame {
             request.addValue(header.value, forHTTPHeaderField: header.name)
+        }
+        // Courier handles cookies itself, so the system neither adds nor stores any.
+        request.httpShouldHandleCookies = false
+        let jarCookies = jar?.cookies(for: url, at: now) ?? []
+        if let cookie = CookieJar.cookieHeader(jar: jarCookies, request: spec.requestCookies) {
+            request.setValue(cookie, forHTTPHeaderField: "Cookie")
         }
         if let body = spec.encodedBody {
             request.httpBody = Data(body.utf8)
@@ -98,11 +110,15 @@ public enum HTTPClient {
     /// Sends on a fresh ephemeral session so every request gets its own connection:
     /// timings always include DNS/TCP/TLS, the certificate is always seen, and no
     /// cookies or cache leak between requests.
-    public static func send(_ spec: RequestSpec) async throws -> HTTPResponse {
-        let request = try makeURLRequest(from: spec)
+    /// With a `jar`, matching cookies are sent and cookies set along redirects are applied to the
+    /// next hop; the caller decides whether to keep `receivedCookies`.
+    public static func send(_ spec: RequestSpec, jar: CookieJar? = nil) async throws -> HTTPResponse {
+        let request = try makeURLRequest(from: spec, jar: jar)
         let configuration = URLSessionConfiguration.ephemeral
         configuration.urlCache = nil
-        let collector = MetricsCollector()
+        let collector = MetricsCollector(
+            cookies: RedirectCookies(jar: jar, requestCookies: spec.requestCookies, originalHost: request.url?.host())
+        )
         let session = URLSession(configuration: configuration, delegate: collector, delegateQueue: nil)
         defer { session.finishTasksAndInvalidate() }
 
@@ -120,7 +136,8 @@ public enum HTTPClient {
             body: data,
             duration: duration,
             finalURL: http.url,
-            metrics: collector.makeMetrics()
+            metrics: collector.makeMetrics(),
+            receivedCookies: collector.receivedCookies + StoredCookie.fromResponse(http)
         )
     }
 }

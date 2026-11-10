@@ -4,6 +4,7 @@ import SwiftUI
 enum SettingsKey {
     static let maskSensitiveHeaders = "maskSensitiveHeaders"
     static let appearance = "appearance"
+    static let rememberCookies = "rememberCookies"
 }
 
 enum AppearanceSetting: String, CaseIterable, Identifiable {
@@ -30,8 +31,11 @@ enum AppearanceSetting: String, CaseIterable, Identifiable {
 }
 
 struct SettingsView: View {
+    let store: AppStore
     @AppStorage(SettingsKey.maskSensitiveHeaders) private var maskSensitiveHeaders = true
     @AppStorage(SettingsKey.appearance) private var appearance = AppearanceSetting.system
+    @AppStorage(SettingsKey.rememberCookies) private var rememberCookies = true
+    @State private var isConfirmingClearCookies = false
 
     var body: some View {
         Form {
@@ -58,8 +62,27 @@ struct SettingsView: View {
                     Text("Values of headers like Authorization, Cookie, X-API-Key and anything with “token” or “secret” in its name show as dots until you hover over them.")
                 }
             }
+            Section("Cookies") {
+                Toggle(isOn: $rememberCookies) {
+                    Text("Remember cookies from responses")
+                    Text("Cookies a server sets are kept per domain, encrypted, and sent with later requests to it, like a browser. Edit them in a request's Cookies tab.")
+                }
+                HStack {
+                    let count = store.cookieJar.cookies.count
+                    Text(count == 1 ? "1 cookie stored" : "\(count) cookies stored")
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("Clear All Cookies…") { isConfirmingClearCookies = true }
+                        .disabled(count == 0)
+                }
+            }
         }
         .formStyle(.grouped)
+        .confirmationDialog("Clear all cookies?", isPresented: $isConfirmingClearCookies) {
+            Button("Clear All Cookies", role: .destructive) { store.clearAllCookies() }
+        } message: {
+            Text("You'll be logged out of anything that relied on them.")
+        }
         .frame(width: 460)
         .fixedSize(horizontal: false, vertical: true)
     }

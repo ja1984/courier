@@ -9,6 +9,8 @@ struct KeyValueEditor: View {
     var note: String?
     /// Hides values of secret-looking keys until hovered or edited (if enabled in Settings).
     var masksSecrets = false
+    /// With `masksSecrets`, hides every value rather than only those of secret-looking keys (cookies).
+    var masksAllValues = false
     /// Autocomplete for keys, and for values based on the key (headers only).
     var suggestions: HeaderSuggestions?
 
@@ -58,6 +60,7 @@ struct KeyValueEditor: View {
                             item: binding(for: row.id),
                             isPlaceholder: row.id == placeholderID,
                             masksSecrets: masksSecrets,
+                            masksAllValues: masksAllValues,
                             suggestions: suggestions,
                             usedKeys: Set(items.lazy.filter { $0.id != row.id }.map(\.key)),
                             onDelete: { items.removeAll { $0.id == row.id } }
@@ -107,6 +110,7 @@ private struct KeyValueRow: View {
     @Binding var item: KeyValue
     let isPlaceholder: Bool
     let masksSecrets: Bool
+    let masksAllValues: Bool
     let suggestions: HeaderSuggestions?
     let usedKeys: Set<String>
     let onDelete: () -> Void
@@ -119,7 +123,7 @@ private struct KeyValueRow: View {
 
     private var isMasked: Bool {
         masksSecrets && maskSetting && !isHoveringValue && !valueIsFocused
-            && !item.value.isEmpty && SensitiveHeaders.isSensitive(item.key)
+            && !item.value.isEmpty && (masksAllValues || SensitiveHeaders.isSensitive(item.key))
     }
 
     private var keySuggestions: [String] {
@@ -163,7 +167,7 @@ private struct KeyValueRow: View {
                             .accessibilityLabel("Hidden value")
                     }
                 }
-                .help(isMasked ? "Hidden because “\(item.key)” looks like a secret. Hover to show." : "")
+                .help(isMasked ? (masksAllValues ? "Hidden. Hover to show." : "Hidden because “\(item.key)” looks like a secret. Hover to show.") : "")
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
                 .onHover { isHoveringValue = $0 }

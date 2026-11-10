@@ -60,6 +60,9 @@ nonisolated struct Persistence {
     func loadCollections() -> CollectionLibrary { load(CollectionLibrary.self, "collections") ?? CollectionLibrary() }
     func saveCollections(_ library: CollectionLibrary) { save(library, "collections") }
 
+    func loadCookies() -> CookieJar { load(CookieJar.self, "cookies") ?? CookieJar() }
+    func saveCookies(_ jar: CookieJar) { save(jar, "cookies") }
+
     private func load<T: Decodable>(_ type: T.Type, _ name: String) -> T? {
         do {
             return try store.load(type, name: name)

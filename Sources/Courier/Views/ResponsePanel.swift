@@ -3,7 +3,7 @@ import CourierCore
 import SwiftUI
 
 private enum ResponseSection: String, CaseIterable, Identifiable {
-    case body, headers
+    case body, headers, cookies
     var id: String { rawValue }
 }
 
@@ -66,6 +66,8 @@ struct ResponsePanel: View {
     private func searchResults(for response: HTTPResponse) -> SearchResults {
         guard isSearching, !query.isEmpty else { return SearchResults(headers: response.headers) }
         switch section {
+        case .cookies:
+            return SearchResults(headers: response.headers)
         case .headers:
             let rows = response.headers.filter {
                 $0.key.localizedCaseInsensitiveContains(query) || $0.value.localizedCaseInsensitiveContains(query)
@@ -126,7 +128,7 @@ struct ResponsePanel: View {
         VStack(spacing: 0) {
             header
             Divider()
-            if isSearching, tab.response != nil, !tab.isLoading {
+            if isSearching, section != .cookies, tab.response != nil, !tab.isLoading {
                 searchBar(results)
                 Divider()
             }
@@ -226,13 +228,18 @@ struct ResponsePanel: View {
                 TabSwitcher(selection: $section, items: [
                     .init(value: ResponseSection.body, title: "Body"),
                     .init(value: ResponseSection.headers, title: "Headers (\(response.headers.count))"),
+                    .init(
+                        value: ResponseSection.cookies,
+                        title: response.receivedCookies.isEmpty ? "Cookies" : "Cookies (\(response.receivedCookies.count))",
+                        help: "Cookies the response set"
+                    ),
                 ])
                 .accessibilityLabel("Response section")
-                // Body controls stay in place on the Headers tab (disabled), so the bar doesn't jump.
+                // Body controls stay in place on the Headers and Cookies tabs (disabled), so the bar doesn't jump.
                 if response.format != .binary {
                     Group {
                         FormatBadge(response: response)
-                            .opacity(section == .headers ? 0.5 : 1)
+                            .opacity(section != .body ? 0.5 : 1)
                         let modes = BodyViewMode.available(for: response)
                         if modes.count > 1 {
                             TabSwitcher(
@@ -242,7 +249,7 @@ struct ResponsePanel: View {
                             .accessibilityLabel("Body view")
                         }
                     }
-                    .disabled(section == .headers)
+                    .disabled(section != .body)
                 }
                 Button {
                     if isSearching { closeSearch() } else { openSearch() }
@@ -250,6 +257,7 @@ struct ResponsePanel: View {
                     Image(systemName: "magnifyingglass")
                 }
                 .buttonStyle(.borderless)
+                .disabled(section == .cookies)
                 .tooltip(isSearching ? "Close search" : "Find in response (⌘F)")
                 .accessibilityLabel(isSearching ? "Close search" : "Find in response")
                 Button {
@@ -315,6 +323,7 @@ struct ResponsePanel: View {
             switch section {
             case .body: bodyView(for: response, results: results)
             case .headers: HeadersList(headers: results.headers)
+            case .cookies: ResponseCookiesList(cookies: response.receivedCookies)
             }
         } else {
             ContentUnavailableView {
