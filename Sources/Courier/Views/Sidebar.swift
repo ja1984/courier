@@ -70,7 +70,7 @@ struct Sidebar: View {
                 } label: {
                     Label("\(mode.title) Options", systemImage: "ellipsis")
                 }
-                .help("\(mode.title) options")
+                .tooltip("\(mode.title) options")
             }
         }
         .alert("New Collection", isPresented: $isAddingCollection) {

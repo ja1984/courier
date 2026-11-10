@@ -114,7 +114,7 @@ struct TabBar: View {
             }
             .buttonStyle(.borderless)
             .padding(.horizontal, 6)
-            .help("New Tab (⌘T)")
+            .tooltip("New Tab (⌘T)")
             .accessibilityLabel("New Tab")
         }
         .background(Theme.content)
@@ -186,7 +186,7 @@ private struct TabChip: View {
             }
             .buttonStyle(.borderless)
             .opacity(isHovering || isSelected || tab.hasUnsavedChanges ? 1 : 0)
-            .help(tab.hasUnsavedChanges ? "Unsaved changes. Press ⌘S to save · Close tab (⌘W)" : "Close tab (⌘W)")
+            .tooltip(tab.hasUnsavedChanges ? "Unsaved changes. Press ⌘S to save · Close tab (⌘W)" : "Close tab (⌘W)")
             .accessibilityLabel("Close tab")
         }
         .padding(.leading, 10)

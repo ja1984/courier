@@ -108,7 +108,7 @@ private struct URLBar: View {
                 .buttonStyle(.borderless)
                 .fixedSize()
                 .padding(.leading, 12)
-                .help("HTTP method")
+                .tooltip("HTTP method")
                 .accessibilityLabel("HTTP method \(tab.spec.method.rawValue)")
 
                 Divider()
@@ -144,7 +144,7 @@ private struct URLBar: View {
             if tab.isLoading {
                 Button("Cancel", role: .cancel) { tab.cancel() }
                     .controlSize(.large)
-                    .help("Cancel request (⌘.)")
+                    .tooltip("Cancel request (⌘.)")
             } else {
                 Button {
                     store.send(tab)
@@ -155,7 +155,7 @@ private struct URLBar: View {
                 .buttonStyle(.borderedProminent)
                 .controlSize(.large)
                 .disabled(isURLEmpty)
-                .help(isURLEmpty ? "Enter a URL to send" : "Send request (⌘↩)")
+                .tooltip(isURLEmpty ? "Enter a URL to send" : "Send request (⌘↩)")
             }
 
             Button {
@@ -168,7 +168,7 @@ private struct URLBar: View {
             }
             .controlSize(.large)
             .disabled(isURLEmpty)
-            .help(didCopy ? "Copied" : "Copy as cURL (⇧⌘C)")
+            .tooltip(didCopy ? "Copied as cURL ✓" : "Copy as cURL (⇧⌘C)")
             .accessibilityLabel(didCopy ? "Copied as cURL" : "Copy as cURL")
             // Reverts the checkmark; cancelled automatically if the view goes away.
             .task(id: didCopy) {

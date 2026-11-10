@@ -179,13 +179,15 @@ private struct KeyValueRow: View {
                     }
                     .buttonStyle(.borderless)
                     .opacity(isHovering ? 1 : 0)
-                    .help("Remove \(item.key.isEmpty ? "this row" : "“\(item.key)”")")
+                    .tooltip("Remove \(item.key.isEmpty ? "this row" : "“\(item.key)”")")
                     .accessibilityLabel("Remove \(item.key.isEmpty ? "row" : item.key)")
                 }
             }
         )
         .font(.system(size: 12))
         .background(isHovering && !isPlaceholder ? Color.primary.opacity(0.03) : .clear)
+        // The whole row counts for hover, including the (transparent, so otherwise ignored) trash column.
+        .contentShape(Rectangle())
         .onHover { isHovering = $0 }
     }
 }
@@ -224,7 +226,7 @@ struct BodyEditor: View {
                     }
                     .controlSize(.small)
                     .disabled(jsonIsInvalid || spec.bodyText.isEmpty)
-                    .help(jsonIsInvalid ? "Fix the JSON before formatting it" : "Re-indent the JSON body")
+                    .tooltip(jsonIsInvalid ? "Fix the JSON before formatting it" : "Re-indent the JSON body")
                 }
             }
 

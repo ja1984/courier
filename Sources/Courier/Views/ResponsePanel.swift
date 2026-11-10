@@ -184,10 +184,10 @@ struct ResponsePanel: View {
             if section == .body {
                 ControlGroup {
                     Button { step(-1, results: results) } label: { Image(systemName: "chevron.up") }
-                        .help("Previous match (⇧⌘G)")
+                        .tooltip("Previous match (⇧⌘G)")
                         .accessibilityLabel("Previous match")
                     Button { step(1, results: results) } label: { Image(systemName: "chevron.down") }
-                        .help("Next match (⌘G)")
+                        .tooltip("Next match (⌘G)")
                         .accessibilityLabel("Next match")
                 }
                 .controlSize(.small)
@@ -196,7 +196,7 @@ struct ResponsePanel: View {
             }
             Button("Done") { closeSearch() }
                 .controlSize(.small)
-                .help("Close search (Esc)")
+                .tooltip("Close search (Esc)")
         }
         .font(.system(size: 12))
         .padding(.horizontal, 14)
@@ -250,7 +250,7 @@ struct ResponsePanel: View {
                     Image(systemName: "magnifyingglass")
                 }
                 .buttonStyle(.borderless)
-                .help(isSearching ? "Close search" : "Find in response (⌘F)")
+                .tooltip(isSearching ? "Close search" : "Find in response (⌘F)")
                 .accessibilityLabel(isSearching ? "Close search" : "Find in response")
                 Button {
                     NSPasteboard.general.clearContents()
@@ -259,7 +259,7 @@ struct ResponsePanel: View {
                     Image(systemName: "doc.on.doc")
                 }
                 .buttonStyle(.borderless)
-                .help("Copy response body")
+                .tooltip("Copy response body")
                 .accessibilityLabel("Copy response body")
                 .disabled(response.text == nil)
             } else {
@@ -277,7 +277,7 @@ struct ResponsePanel: View {
             } label: {
                 Image(systemName: "rectangle.expand.vertical").frame(width: 22, height: 20)
             }
-            .help("Expand all")
+            .tooltip("Expand all")
             .accessibilityLabel("Expand all")
             Divider().frame(height: 14)
             Button {
@@ -285,7 +285,7 @@ struct ResponsePanel: View {
             } label: {
                 Image(systemName: "rectangle.compress.vertical").frame(width: 22, height: 20)
             }
-            .help("Collapse all")
+            .tooltip("Collapse all")
             .accessibilityLabel("Collapse all")
         }
         .buttonStyle(.borderless)
