@@ -28,7 +28,13 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
 - **Tabs** for working on several requests at once. They're restored when you reopen the app, and <kbd>⇧</kbd><kbd>⌘</kbd><kbd>T</kbd> reopens tabs you closed.
 - **Query params stay in sync with the URL.** Edit either one, and switch individual params and headers on or off.
 - **Secrets stay hidden.** Values of headers like `Authorization`, `Cookie`, `X-API-Key` or anything named with "token", "secret" or "key" show as dots until you hover over the value or edit it. You can turn this off in Settings (<kbd>⌘</kbd><kbd>,</kbd>).
+- **Header autocomplete.** Common header names as you type, then typical values for that header (`Content-Type`, `Accept`, `Authorization: Bearer …`). Headers you've used before are suggested too, but never the values of secret ones.
 - **Body** as JSON (highlighted, with Beautify), plain text, or form fields. Content-Type is set for you unless you set it yourself.
+
+**Cookies**
+- A **Cookies tab** on every request, saved with it. cURL's `-b` lands there, and Copy as cURL puts it back.
+- A **cookie jar**, like a browser's: cookies a server sets are kept per domain and sent with later requests to it, following domain, path, Secure and expiry rules, and through redirects. Log in once and stay logged in. See and edit the jar's cookies for a URL in its Cookies tab, or turn the jar off in Settings.
+- A **Cookies tab on responses** shows what the server set, with domain, path, expiry and Secure/HttpOnly/SameSite.
 
 **Collections**
 - **Save requests with <kbd>⌘</kbd><kbd>S</kbd>** into named collections. Saved requests are kept until you delete them; they're never trimmed like history.
@@ -60,7 +66,7 @@ Courier is a small SwiftUI app for the 90% of API work that doesn't need an acco
 **History**
 - The last 500 requests are kept and can be grouped **by date or by host**, searched, reopened, copied as cURL, saved to a collection or deleted.
 - The **History menu** in the menu bar lists your recent requests. Query strings are left out of the menu, since they often carry tokens.
-- Tabs, collections and history are **encrypted on disk**, with the key kept in your Keychain.
+- Tabs, collections, history and cookies are **encrypted on disk**, with the key kept in your Keychain.
 
 ## Download
 

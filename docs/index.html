@@ -424,6 +424,16 @@ footer a:hover { color: var(--text); }
         <h3>Fluent in cURL</h3>
         <p>Chrome &amp; Safari “Copy as cURL”, multi-line, <code>-H</code>, <code>-d</code>, <code>--json</code>, <code>-u</code>, <code>-F</code> and more. And any request copies back out as cURL.</p>
       </div>
+      <div class="card wide reveal" style="--c:#d97706">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9 4 4 0 0 1-4-4 4 4 0 0 1-5-5z"/><circle cx="8.5" cy="11" r="1"/><circle cx="12" cy="16" r="1"/><circle cx="15.5" cy="13" r="1"/></svg></div>
+        <h3>Cookies that behave like a browser</h3>
+        <p>Log in once and stay logged in: cookies the server sets go into a cookie jar and come back on later requests, following domain, path and expiry rules, even through redirects. Edit or delete any of them per request, add your own, and see exactly what each response set.</p>
+      </div>
+      <div class="card reveal" style="--c:#14b8a6">
+        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16"/><path d="M4 12h10"/><path d="M4 18h6"/><path d="m15 16 2 2 4-4"/></svg></div>
+        <h3>Headers that autocomplete</h3>
+        <p>Type “con” and pick <code>Content-Type</code>, then <code>application/json</code>. It learns your custom headers too, never your tokens.</p>
+      </div>
       <div class="card reveal" style="--c:#3b82f6">
         <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18"/></svg></div>
         <h3>Tabs that remember</h3>
@@ -452,7 +462,7 @@ footer a:hover { color: var(--text); }
     </div>
     <div class="promise">
       <div class="stat reveal"><div class="big grad">0</div><p>accounts, sign-ins or cloud workspaces.</p></div>
-      <div class="stat reveal"><div class="big grad">AES-GCM</div><p>Tabs, collections and history are encrypted on disk, with the key in your Keychain.</p></div>
+      <div class="stat reveal"><div class="big grad">AES-GCM</div><p>Tabs, collections, history and cookies are encrypted on disk, with the key in your Keychain.</p></div>
       <div class="stat reveal"><div class="big grad">~3 MB</div><p>download. Native SwiftUI, no bundled browser.</p></div>
       <div class="stat reveal"><div class="big grad">No AI</div><p>inside the app. It sends HTTP requests. That's the job.</p></div>
     </div>
@@ -504,7 +514,7 @@ footer a:hover { color: var(--text); }
       <details><summary>Will macOS let me open it?</summary><p>Yes. Releases are signed with a Developer ID and notarized by Apple, so it opens like any app from the App Store. Download the DMG, drag Courier to Applications, done.</p></details>
       <details><summary>Which Macs does it run on?</summary><p>Any Mac with macOS 26 or later — it's a universal app for both Apple silicon and Intel.</p></details>
       <details><summary>Can I move over from Postman?</summary><p>Export your collection from Postman (v2.0 or v2.1) and use File › Import Collections… in Courier. Folders, auth, bodies and disabled params carry over; <code>{{variables}}</code> are kept as text.</p></details>
-      <details><summary>Where is my data stored?</summary><p>Only on your Mac, encrypted with AES-GCM; the key lives in your Keychain. Exports leave secret values out unless you explicitly tick “Include secret values”.</p></details>
+      <details><summary>Where is my data stored?</summary><p>Only on your Mac, encrypted with AES-GCM: tabs, history, collections and cookies. The key lives in your Keychain. Exports leave secret values out unless you explicitly tick “Include secret values”.</p></details>
       <details><summary>Something's missing. Can I ask for it?</summary><p>Please do — <a href="https://github.com/ja1984/courier/issues">open an issue</a> or send a pull request.</p></details>
     </div>
   </div>
