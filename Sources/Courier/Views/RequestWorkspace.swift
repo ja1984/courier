@@ -21,6 +21,14 @@ struct RequestWorkspace: View {
         Binding(get: { tab.spec.params }, set: { tab.spec.setParams($0) })
     }
 
+    /// Built-in headers plus the ones you've used in history and collections.
+    private var headerSuggestions: HeaderSuggestions {
+        HeaderSuggestions(
+            learnedFrom: store.history.map(\.spec)
+                + store.library.collections.flatMap { $0.requests.map(\.spec) }
+        )
+    }
+
     var body: some View {
         VSplitView {
             VStack(alignment: .leading, spacing: 10) {
@@ -40,7 +48,8 @@ struct RequestWorkspace: View {
                             title: "Headers",
                             items: $tab.spec.headers,
                             note: "Content-Type is added automatically for bodies",
-                            masksSecrets: true
+                            masksSecrets: true,
+                            suggestions: headerSuggestions
                         )
                     case .body:
                         BodyEditor(spec: $tab.spec)
